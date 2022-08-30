@@ -14,7 +14,7 @@ The intended usage is to persist and access collections of fixed size records. I
 
 ## Usage
 
-```
+```js
 import { chunkyStore } from '@dstanesc/store-chunky-bytes'
 import { codec, blockStore, chunkerFactory } from './util'
 
@@ -41,9 +41,9 @@ const recordBytes = await read(startOffset, sliceLength, { root, decode, get })
 
 ```
 
-For more details see [tests](https://github.com/dstanesc/store-chunky-bytes/blob/39b4ed9e6fa0af28bdad7f732c941fcf3b599a7a/src/__tests__/chunky-store.test.ts#L18-L50).
+For more details see the [tests](https://github.com/dstanesc/store-chunky-bytes/blob/39b4ed9e6fa0af28bdad7f732c941fcf3b599a7a/src/__tests__/chunky-store.test.ts#L18-L50).
 
-To keep library size, dependencies and flexibility under control `blockStore`, content identifier `encode/decode` or `chunking` functionality are not part of the library. However, all batteries are included. The [test utilities](https://github.com/dstanesc/store-chunky-bytes/blob/main/src/__tests__/util.ts) offer basic functionality for reuse and extension.
+To keep library size, dependencies and flexibility under control the `blockStore`, the content identifier `encode/decode` and the `chunking` functionality are not part of the library. However, all batteries are included. The [test utilities](https://github.com/dstanesc/store-chunky-bytes/blob/main/src/__tests__/util.ts) offer basic functionality for reuse and extension.
 
 ## Build
 
