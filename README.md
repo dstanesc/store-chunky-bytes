@@ -1,9 +1,9 @@
 # Store Chunky Bytes
 
-Simple API to :
+Current library is a building block to :
 
-1. Persist large byte arrays, across multiple chunks, in the blob storage of your preference (memory, cloud, ipfs, etc.) 
-2. Retrieve slices of data, based on the offset, independent of the individual chunk boundaries 
+1. __Persist__ large byte arrays, across multiple chunks, in the blob store of your choice (memory, cloud, ipfs, etc.) 
+2. __Retrieve__ slices of data, based on the offset, independent of the individual chunk boundaries 
 
 Persisted data is content addressable, hence immutable and versionable.
 
@@ -14,6 +14,36 @@ The intended usage is to persist and access collections of fixed size records. I
 
 ## Usage
 
+```
+import { chunkyStore } from '@dstanesc/store-chunky-bytes'
+import { codec, blockStore, chunkerFactory } from './util'
+
+const buf = ...
+
+// configure utility functions
+const { get, put } = blockStore()
+const { encode, decode } = codec()
+const { fastcdc, buzhash } = chunkerFactory({ fastAvgSize: 1024 * 16, buzHash: 15 })
+
+// chunky store functionality
+const { create, read } = chunkyStore()
+
+// create blocks and store them in the block store
+// the root is the cryptographic handle to the logical buffer and needs preserved for later access
+const { root, blocks } = await create({ buf, chunk, encode })
+blocks.forEach(block => put(block))
+
+const startOffset = ...
+const sliceLength = ...
+
+// extract a slice of the chunked data 
+const recordBytes = await read(startOffset, sliceLength, { root, decode, get })
+
+```
+
+For more details see [tests](https://github.com/dstanesc/store-chunky-bytes/blob/39b4ed9e6fa0af28bdad7f732c941fcf3b599a7a/src/__tests__/chunky-store.test.ts#L18-L50).
+
+To keep library size, dependencies and flexibility under control `blockStore`, content identifier `encode/decode` or `chunking` functionality are not part of the library. However, all batteries are included. The [test utilities](https://github.com/dstanesc/store-chunky-bytes/blob/main/src/__tests__/util.ts) offer basic functionality for reuse and extension.
 
 ## Build
 
