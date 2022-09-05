@@ -61,10 +61,10 @@ const chunkyStore = () => {
         const startOffsets: Map<number, any> = new Map()
         const blocks: { cid: any, bytes: Uint8Array }[] = [] // {cid, bytes}
         //const endOffsets = new Map()
-        const index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets /*, endOffsets*/, indexSize: undefined, byteArraySize: undefined }
         const indexSize: number = offsets.length
         const byteArraySize: number = buf.length
-        const indexBuffer = new Uint8Array(indexSize * (4 /* start offset */ + 4 /* end offset */ + 36 /* cid */) + (4 /* index control */ + 4 /* index size */) + 4 /* byte array size */)
+        const index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets /*, endOffsets*/, indexSize: indexSize, byteArraySize: byteArraySize }
+        const indexBuffer = new Uint8Array(indexSize * blockSize + shift)
         for (const offset of offsets.values()) {
             const chunkBytes = buf.subarray(lastOffset, offset)
             const chunkCid = await encode(chunkBytes)
@@ -92,9 +92,6 @@ const chunkyStore = () => {
         // TODO chunk index on size threshold, fixed size chunks
         const rootBlock = { cid: root, bytes: indexBuffer }
         blocks.push(rootBlock)
-
-        index.indexSize = indexSize
-        index.byteArraySize = byteArraySize
 
         return { root, index, blocks }
     }
