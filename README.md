@@ -13,7 +13,7 @@ The intended usage is to persist and access collections of fixed size records. I
 
 ## Updates
 
-`v0.0.2` - Add ability to append efficiently byte arrays to the already stored data (ie. w/o retrieving the original byte array)  
+`v0.0.2` - API addition. Append efficiently new data to the already stored byte array (ie. w/o retrieving the original byte array)  
 
 ## Usage
 
@@ -45,9 +45,9 @@ const sliceLength = ...
 const recordBytes = await read(startOffset, sliceLength, { root, decode, get })
 ```
 
-For more details see the [chunky store tests](https://github.com/dstanesc/store-chunky-bytes/blob/39b4ed9e6fa0af28bdad7f732c941fcf3b599a7a/src/__tests__/chunky-store.test.ts#L18-L50).
+For more details see the [store tests](https://github.com/dstanesc/store-chunky-bytes/blob/39b4ed9e6fa0af28bdad7f732c941fcf3b599a7a/src/__tests__/chunky-store.test.ts#L18-L50).
 
-### Append Additional Data
+### Append Data
 
 ```js
 import { chunkyStore } from '@dstanesc/store-chunky-bytes'
@@ -77,10 +77,14 @@ const buf2 = ...
 const { root: appendRoot, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
 appendBlocks.forEach(block => put(block))
 
-// extract any slice of data from the second root
+const startOffset = ...
+const sliceLength = ...
+
+// extract any slice of data from the combined byte arrays using the second root
 const recordBytes = await read(startOffset, sliceLength, { root: appendRoot, decode, get })
 ```
-For more details see the [chunky append tests]()
+
+For more details see the [append tests](https://github.com/dstanesc/store-chunky-bytes/blob/3f80f265ffed67df4d12cbcf8380ab19e9827050/src/__tests__/chunky-append.test.ts#L16)
 
 To keep library size, dependencies and flexibility under control the `blockStore`, the content identifier `encode/decode` and the `chunking` functionality are not part of the library. However, all batteries are included. The [test utilities](https://github.com/dstanesc/store-chunky-bytes/blob/main/src/__tests__/util.ts) offer basic functionality for reuse and extension.
 
