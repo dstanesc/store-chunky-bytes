@@ -4,7 +4,7 @@ const INDEX_CONTROL_FLAG: number = 0b100100 // Dec 36, Hex 0x24
 
 const INDEX_HEADER_SIZE: number = 12 // bytes |<-- index control (4 bytes) -->|<-- index size (4 bytes) -->|<-- byte array size (4 bytes) -->|
 
-const INDEX_BLOCK_SIZE: number = 44 // bytes |<-- chunk start offset (4 bytes) -->|<-- chunk end offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|
+const INDEX_BLOCK_SIZE: number = 40 // bytes |<-- chunk start offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|
 
 const CHUNK_CONTENT_IDENTIFIER_SIZE: number = 36 // bytes
 
@@ -76,8 +76,7 @@ const chunkyStore = () => {
             // TODO store chunk length vs. absolute offset 
             // Propagate choice to the rust library
             writeUInt(indexBuffer, pos, lastOffset)
-            writeUInt(indexBuffer, pos + 4, offset)
-            indexBuffer.set(chunkCid.bytes, pos + 8)
+            indexBuffer.set(chunkCid.bytes, pos + 4)
             lastOffset = offset
             pos += blockSize
         }
@@ -216,8 +215,7 @@ const chunkyStore = () => {
             appendBlocks.push(block)
             appendStartOffsets.set(adjust(lastOffset), chunkCid)
             writeUInt(appendIndexBuffer, pos, adjust(lastOffset))
-            writeUInt(appendIndexBuffer, pos + 4, adjust(offset))
-            appendIndexBuffer.set(chunkCid.bytes, pos + 8)
+            appendIndexBuffer.set(chunkCid.bytes, pos + 4)
             lastOffset = offset
             pos += blockSize
         }
@@ -237,7 +235,7 @@ const chunkyStore = () => {
 
 
 
-    // expected format |<-- index control (4 bytes) -->|<-- index size (4 bytes) -->|<-- byte array size (4 bytes) -->|<-- chunk start offset (4 bytes) -->|<-- chunk end offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|...
+    // expected format |<-- index control (4 bytes) -->|<-- index size (4 bytes) -->|<-- byte array size (4 bytes) -->|<-- chunk start offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|...
 
     const readIndex = async (root: any, get: (root: any) => Promise<Uint8Array>, decode: (bytes: Uint8Array) => any): Promise<{ indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }> => {
         const indexBuffer = await get(root)
@@ -245,16 +243,14 @@ const chunkyStore = () => {
         if ((controlFlag & INDEX_CONTROL_FLAG) === 0) throw new Error(`This byte array is not an index`)
         const indexSize = readUInt(indexBuffer, 4)
         const byteArraySize = readUInt(indexBuffer, 8)
-        const blockSize = 44
-        const shift = 12
+        const blockSize = INDEX_BLOCK_SIZE
+        const shift = INDEX_HEADER_SIZE
         let pos = shift
         const startOffsets = new Map()
         const index = { startOffsets, indexSize, byteArraySize }
         for (let i = 0; i < indexSize; i++) {
             const startOffset = readUInt(indexBuffer, pos)
-            const nextOffset = readUInt(indexBuffer, pos + 4)
-            //const endOffset = nextOffset - 1
-            const cidBytes = readBytes(indexBuffer, pos + 8, 36)
+            const cidBytes = readBytes(indexBuffer, pos + 4, 36)
             const chunkCid = decode(cidBytes)
             startOffsets.set(startOffset, chunkCid)
             pos += blockSize
