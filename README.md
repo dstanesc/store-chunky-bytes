@@ -14,7 +14,7 @@ The intended usage is to persist and access collections of fixed size records. I
 ## Updates
 
 `v0.0.2` - API addition. Append efficiently new data to the already stored byte array (ie. w/o retrieving the original byte array)  
-`v0.0.3` - Breaking change. Introduce support to upcoming features by restructuring of the index persisted structure - reduce size and moving from absolute to relative offsets 
+`v0.0.3` - Breaking change. Introduce support to upcoming features by restructuring the index persisted structure - reducing size and moving from absolute to relative offsets 
 
 ## Usage
 
