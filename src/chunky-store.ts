@@ -166,6 +166,24 @@ const chunkyStore = () => {
         return resultBuffer
     }
 
+    /*
+     *  Append the input buffer to an existing chunked array. The behavior is correct only if:
+     *
+     *  1. the same chunking algorithm is used as in the original `create`
+     *  2. the chunking algorithm is content-defined
+     * 
+     *  If above conditions are met, the function will return the incremental blocks and a new root. 
+     *  The new root can be used to read any slice of data from the combined byte arrays.
+     *  
+     *  @param {any} root - The rood content identifier of a previous chunked array as returned by the `create` function
+     *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
+     *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
+     *  @param {Uint8Array} buff - Input buffer to partition in (content defined) chunks
+     *  @param {(data: Uint8Array) => Uint32Array} chunk - Chunking algorithm to apply on the input. Should return a list of chunk start offsets
+     *  @param {(chunkBytes: Uint8Array) => Promise<any> } encode - Cid encoding function
+     *  
+     *  @returns {{any, any,  {cid: any, bytes: Uint8Array }[]} } root, index, blocks - A data structure containing the chunks (to persist) and the root handle
+     */
     const append = async ({ root, decode, get }: { root?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }): Promise<{ root: any, index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
         
         if (root === undefined) throw new Error(`Missing root, please provide and index or root as arg`)
