@@ -1,10 +1,12 @@
 import bounds from 'binary-search-bounds'
 
-const INDEX_CONTROL_FLAG: number = 0b100100 // Dec 36, Hex 0x24
+// const INDEX_CONTROL_FLAG: number = 0b100100 // Dec 36, Hex 0x24 // absolute offset structure
+
+const INDEX_CONTROL_FLAG: number = 0b111100 // Dec 60, Hex 0x3C // relative offsets
 
 const INDEX_HEADER_SIZE: number = 12 // bytes |<-- index control (4 bytes) -->|<-- index size (4 bytes) -->|<-- byte array size (4 bytes) -->|
 
-const INDEX_BLOCK_SIZE: number = 44 // bytes |<-- chunk start offset (4 bytes) -->|<-- chunk end offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|
+const INDEX_BLOCK_SIZE: number = 40 // bytes |<-- chunk start offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|
 
 const CHUNK_CONTENT_IDENTIFIER_SIZE: number = 36 // bytes
 
@@ -56,11 +58,11 @@ const chunkyStore = () => {
         const offsets = chunk(buf)
         const shift = INDEX_HEADER_SIZE // allow index header
         const blockSize = INDEX_BLOCK_SIZE
+        let beforeLastOffset = 0
         let lastOffset = 0
         let pos = shift
         const startOffsets: Map<number, any> = new Map()
         const blocks: { cid: any, bytes: Uint8Array }[] = [] // {cid, bytes}
-        //const endOffsets = new Map()
         const indexSize: number = offsets.length
         const byteArraySize: number = buf.length
         const index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets /*, endOffsets*/, indexSize: indexSize, byteArraySize: byteArraySize }
@@ -72,12 +74,10 @@ const chunkyStore = () => {
             const block = { cid: chunkCid, bytes: chunkBytes }
             blocks.push(block)
             startOffsets.set(lastOffset, chunkCid)
-            // endOffsets.set(lastOffset, offset - 1)
-            // TODO store chunk length vs. absolute offset 
-            // Propagate choice to the rust library
-            writeUInt(indexBuffer, pos, lastOffset)
-            writeUInt(indexBuffer, pos + 4, offset)
-            indexBuffer.set(chunkCid.bytes, pos + 8)
+            writeUInt(indexBuffer, pos, lastOffset - beforeLastOffset)
+            //console.log(`Writing @ ${lastOffset - beforeLastOffset} - ${chunkCid}`)
+            indexBuffer.set(chunkCid.bytes, pos + 4)
+            beforeLastOffset = lastOffset
             lastOffset = offset
             pos += blockSize
         }
@@ -185,40 +185,44 @@ const chunkyStore = () => {
      *  @returns {{any, any,  {cid: any, bytes: Uint8Array }[]} } root, index, blocks - A data structure containing the chunks (to persist) and the root handle
      */
     const append = async ({ root, decode, get }: { root?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }): Promise<{ root: any, index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
-        
+
         if (root === undefined) throw new Error(`Missing root, please provide the predecessor root as arg`)
         const { indexStruct: origIndex, indexBuffer: origIndexBuffer } = await readIndex(root, get, decode)
         const { startOffsets: origStartOffsets, indexSize: origIndexSize, byteArraySize: origByteArraySize } = origIndex
         const origStartOffsetArray: number[] = Array.from(origStartOffsets.keys())
+
         const lastChunkOffset = origStartOffsetArray[origStartOffsetArray.length - 1]
         const lastChunkCid = origStartOffsets.get(lastChunkOffset)
         const lastChunkBuffer = await get(lastChunkCid)
+        let beforeLastAbsoluteOffset = origStartOffsetArray.length > 1 ? origStartOffsetArray[origStartOffsetArray.length - 2] : 0
+
         const adjust = (offset: number): number => offset + lastChunkOffset
         const overlapBuffer = new Uint8Array(lastChunkBuffer.byteLength + buf.byteLength)
         overlapBuffer.set(lastChunkBuffer, 0)
         overlapBuffer.set(buf, lastChunkBuffer.byteLength)
         const appendOffsets = chunk(overlapBuffer)
         const appendBlocks: { cid: any, bytes: Uint8Array }[] = [] // {cid, bytes}
-        let lastOffset = 0
-        const shift = INDEX_HEADER_SIZE 
+        let lastAbsoluteAppendOffset = 0
+        const shift = INDEX_HEADER_SIZE
         const blockSize = INDEX_BLOCK_SIZE
         let pos = (origIndexSize - 1) * blockSize + shift
-        const appendStartOffsets: Map<number, any> = new Map(origIndex.startOffsets)
+        const appendStartOffsets: Map<number, any> = new Map(origStartOffsets)
         const appendIndexSize: number = origIndexSize + appendOffsets.length - 1
         const appendByteArraySize: number = origByteArraySize + buf.length
         const appendIndex: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets: appendStartOffsets /*, endOffsets*/, indexSize: appendIndexSize, byteArraySize: appendByteArraySize }
         const appendIndexBuffer = new Uint8Array(appendIndexSize * blockSize + shift)
-        for (const offset of appendOffsets.values()) {
-            const chunkBytes = overlapBuffer.subarray(lastOffset, offset)
+        for (const absoluteAppendOffset of appendOffsets.values()) {
+            const chunkBytes = overlapBuffer.subarray(lastAbsoluteAppendOffset, absoluteAppendOffset)
             const chunkCid = await encode(chunkBytes)
             if (chunkCid.byteLength !== CHUNK_CONTENT_IDENTIFIER_SIZE) throw new Error(`The cid returned by 'encode' function has unexpected size ${chunkCid.byteLength}. Expected 36 bytes.`)
             const block = { cid: chunkCid, bytes: chunkBytes }
             appendBlocks.push(block)
-            appendStartOffsets.set(adjust(lastOffset), chunkCid)
-            writeUInt(appendIndexBuffer, pos, adjust(lastOffset))
-            writeUInt(appendIndexBuffer, pos + 4, adjust(offset))
-            appendIndexBuffer.set(chunkCid.bytes, pos + 8)
-            lastOffset = offset
+            appendStartOffsets.set(adjust(lastAbsoluteAppendOffset), chunkCid)
+            writeUInt(appendIndexBuffer, pos, adjust(lastAbsoluteAppendOffset) - beforeLastAbsoluteOffset)
+            //console.log(`Writing @ relative=${adjust(lastAbsoluteAppendOffset) - beforeLastAbsoluteOffset} absolute=${adjust(lastAbsoluteAppendOffset)}- ${chunkCid}`)
+            appendIndexBuffer.set(chunkCid.bytes, pos + 4)
+            beforeLastAbsoluteOffset = adjust(lastAbsoluteAppendOffset)
+            lastAbsoluteAppendOffset = absoluteAppendOffset
             pos += blockSize
         }
         appendIndexBuffer.set(origIndexBuffer.subarray(0, origIndexBuffer.length - blockSize), 0)
@@ -237,33 +241,34 @@ const chunkyStore = () => {
 
 
 
-    // expected format |<-- index control (4 bytes) -->|<-- index size (4 bytes) -->|<-- byte array size (4 bytes) -->|<-- chunk start offset (4 bytes) -->|<-- chunk end offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|...
+    // expected format |<-- index control (4 bytes) -->|<-- index size (4 bytes) -->|<-- byte array size (4 bytes) -->|<-- chunk start offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|...
 
     const readIndex = async (root: any, get: (root: any) => Promise<Uint8Array>, decode: (bytes: Uint8Array) => any): Promise<{ indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }> => {
         const indexBuffer = await get(root)
         const controlFlag: number = readControlFlag(indexBuffer, 0)
-        if ((controlFlag & INDEX_CONTROL_FLAG) === 0) throw new Error(`This byte array is not an index`)
+        if ((controlFlag & INDEX_CONTROL_FLAG) === 0) throw new Error(`This byte array is not representing a supported index structure`)
         const indexSize = readUInt(indexBuffer, 4)
         const byteArraySize = readUInt(indexBuffer, 8)
-        const blockSize = 44
-        const shift = 12
+        const blockSize = INDEX_BLOCK_SIZE
+        const shift = INDEX_HEADER_SIZE
         let pos = shift
         const startOffsets = new Map()
+        let absoluteOffset = 0
         const index = { startOffsets, indexSize, byteArraySize }
         for (let i = 0; i < indexSize; i++) {
-            const startOffset = readUInt(indexBuffer, pos)
-            const nextOffset = readUInt(indexBuffer, pos + 4)
-            //const endOffset = nextOffset - 1
-            const cidBytes = readBytes(indexBuffer, pos + 8, 36)
+            const relativeStartOffset = readUInt(indexBuffer, pos)
+            absoluteOffset += relativeStartOffset
+            const cidBytes = readBytes(indexBuffer, pos + 4, 36)
             const chunkCid = decode(cidBytes)
-            startOffsets.set(startOffset, chunkCid)
+            //console.log(`Reading @ relative=${relativeStartOffset} absolute=${absoluteOffset} - ${chunkCid}`)
+            startOffsets.set(absoluteOffset, chunkCid)
             pos += blockSize
         }
-
+        console.log(`\n===\n`)
         return { indexStruct: index, indexBuffer }
     }
 
-    return { create, read, append }
+    return { create, read, append, readIndex /* for testing only */ }
 }
 
 export { chunkyStore }
