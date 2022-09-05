@@ -63,7 +63,6 @@ const chunkyStore = () => {
         let pos = shift
         const startOffsets: Map<number, any> = new Map()
         const blocks: { cid: any, bytes: Uint8Array }[] = [] // {cid, bytes}
-        //const endOffsets = new Map()
         const indexSize: number = offsets.length
         const byteArraySize: number = buf.length
         const index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets /*, endOffsets*/, indexSize: indexSize, byteArraySize: byteArraySize }
@@ -75,9 +74,6 @@ const chunkyStore = () => {
             const block = { cid: chunkCid, bytes: chunkBytes }
             blocks.push(block)
             startOffsets.set(lastOffset, chunkCid)
-            // endOffsets.set(lastOffset, offset - 1)
-            // TODO store chunk length vs. absolute offset 
-            // Propagate choice to the rust library
             writeUInt(indexBuffer, pos, lastOffset - beforeLastOffset)
             //console.log(`Writing @ ${lastOffset - beforeLastOffset} - ${chunkCid}`)
             indexBuffer.set(chunkCid.bytes, pos + 4)
