@@ -210,7 +210,7 @@ const chunkyStore = () => {
         const shift = INDEX_HEADER_SIZE
         const blockSize = INDEX_BLOCK_SIZE
         let pos = (origIndexSize - 1) * blockSize + shift
-        const appendStartOffsets: Map<number, any> = new Map(origIndex.startOffsets)
+        const appendStartOffsets: Map<number, any> = new Map(origStartOffsets)
         const appendIndexSize: number = origIndexSize + appendOffsets.length - 1
         const appendByteArraySize: number = origByteArraySize + buf.length
         const appendIndex: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets: appendStartOffsets /*, endOffsets*/, indexSize: appendIndexSize, byteArraySize: appendByteArraySize }
