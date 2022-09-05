@@ -26,7 +26,8 @@ describe("Chunky bytes", function () {
         for (let index = 0; index < RECORD_COUNT; index++) {
             const demoRecord = uuidV4();
             originalRecords.push(demoRecord)
-            const bytes = new TextEncoder().encode(demoRecord)
+            //const bytes = new TextEncoder().encode(demoRecord)
+            const bytes = uuidParse(demoRecord)
             buf.set(bytes, cursor * RECORD_SIZE_BYTES)
             cursor++
         }
@@ -45,7 +46,8 @@ describe("Chunky bytes", function () {
         const recordBytes = await read(999 * RECORD_SIZE_BYTES, RECORD_SIZE_BYTES, { root, decode, get })
 
         // decode binary data into business domain
-        const recordFound = new TextDecoder().decode(recordBytes)
+        const recordFound = uuidStringify(recordBytes)
+        //const recordFound = new TextDecoder().decode(recordBytes)
         assert.equal(recordFound, originalRecords[999])
     })
 
@@ -60,7 +62,8 @@ describe("Chunky bytes", function () {
         for (let index = 0; index < RECORD_COUNT; index++) {
             const demoRecord = uuidV4();
             originalRecords.push(demoRecord)
-            const bytes = new TextEncoder().encode(demoRecord)
+            const bytes = uuidParse(demoRecord)
+            //const bytes = new TextEncoder().encode(demoRecord)
             buf.set(bytes, cursor * RECORD_SIZE_BYTES)
             cursor++
         }
@@ -94,7 +97,8 @@ describe("Chunky bytes", function () {
         for (let index = 0; index < RECORD_COUNT; index++) {
             const demoRecord = uuidV4();
             originalRecords.push(demoRecord)
-            const bytes = new TextEncoder().encode(demoRecord)
+            const bytes = uuidParse(demoRecord)
+            //const bytes = new TextEncoder().encode(demoRecord)
             buf.set(bytes, cursor * RECORD_SIZE_BYTES)
             cursor++
         }
@@ -114,7 +118,8 @@ describe("Chunky bytes", function () {
         const retrievedRecords = []
         for (let index = 0; index < RECORD_COUNT; index++) {
             const recordBytes = completeBuffer.subarray(cursor2 * RECORD_SIZE_BYTES, cursor2 * RECORD_SIZE_BYTES + RECORD_SIZE_BYTES)
-            const recordFound = new TextDecoder().decode(recordBytes)
+            const recordFound = uuidStringify(recordBytes)
+            //const recordFound = new TextDecoder().decode(recordBytes)
             retrievedRecords.push(recordFound)
             cursor2++
         }

@@ -1,6 +1,6 @@
 import { unpack, pack } from 'msgpackr'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { v4 as uuidV4, parse as uuidParse, stringify as uuidStringify } from 'uuid';
+import { v4 as uuidV4, parse as uuidParse, stringify as uuidStringify, validate as uuidValidate, version as uuidVersion } from 'uuid';
 
 
 import { codec, blockStore, chunkerFactory } from './util'
@@ -123,7 +123,8 @@ async function retrieveRecords(read: any, startOffset: number, recordCount: numb
     const retrievedRecords = []
     for (let index = 0; index < recordCount; index++) {
         const recordBytes = completeBuffer.subarray(cursor * RECORD_SIZE_BYTES, cursor * RECORD_SIZE_BYTES + RECORD_SIZE_BYTES)
-        const recordFound = new TextDecoder().decode(recordBytes)
+        const recordFound = uuidStringify(recordBytes)
+        //const recordFound = new TextDecoder().decode(recordBytes)
         retrievedRecords.push(recordFound)
         cursor++
     }
@@ -137,7 +138,8 @@ function demoByteArray(recordCount: number, RECORD_SIZE_BYTES: number): { buf: U
     for (let index = 0; index < recordCount; index++) {
         const demoRecord = uuidV4();
         records.push(demoRecord);
-        const bytes = new TextEncoder().encode(demoRecord);
+        const bytes = uuidParse(demoRecord)
+        //const bytes = new TextEncoder().encode(demoRecord);
         buf.set(bytes, cursor * RECORD_SIZE_BYTES);
         cursor++;
     }
