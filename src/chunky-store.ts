@@ -116,7 +116,7 @@ const chunkyStore = () => {
     const read = async (startOffset: number, length: number, { root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, debugCallback?: Function): Promise<Uint8Array> => {
 
         if (index === undefined) {
-            if (root === undefined) throw new Error(`Missing root, please provide and index or root as arg`)
+            if (root === undefined) throw new Error(`Missing root, please provide an index or root as arg`)
             const { indexStruct } = await readIndex(root, get, decode)
             index = indexStruct
         }
@@ -186,7 +186,7 @@ const chunkyStore = () => {
      */
     const append = async ({ root, decode, get }: { root?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }): Promise<{ root: any, index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
         
-        if (root === undefined) throw new Error(`Missing root, please provide and index or root as arg`)
+        if (root === undefined) throw new Error(`Missing root, please provide the predecessor root as arg`)
         const { indexStruct: origIndex, indexBuffer: origIndexBuffer } = await readIndex(root, get, decode)
         const { startOffsets: origStartOffsets, indexSize: origIndexSize, byteArraySize: origByteArraySize } = origIndex
         const origStartOffsetArray: number[] = Array.from(origStartOffsets.keys())
