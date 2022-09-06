@@ -54,7 +54,7 @@ const chunkyStore = () => {
      *  
      *  @returns {{any, any,  {cid: any, bytes: Uint8Array }[]} } root, index, blocks - A data structure containing the chunks (to persist) and the root handle
      */
-    const create = async ({ buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }): Promise<{ root: any, index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
+    const create = async ({ buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
         const offsets = chunk(buf)
         const shift = INDEX_HEADER_SIZE // allow index header
         const blockSize = INDEX_BLOCK_SIZE
@@ -65,8 +65,9 @@ const chunkyStore = () => {
         const blocks: { cid: any, bytes: Uint8Array }[] = [] // {cid, bytes}
         const indexSize: number = offsets.length
         const byteArraySize: number = buf.length
-        const index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets /*, endOffsets*/, indexSize: indexSize, byteArraySize: byteArraySize }
+        const indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets /*, endOffsets*/, indexSize: indexSize, byteArraySize: byteArraySize }
         const indexBuffer = new Uint8Array(indexSize * blockSize + shift)
+        const index = { indexStruct, indexBuffer }
         for (const offset of offsets.values()) {
             const chunkBytes = buf.subarray(lastOffset, offset)
             const chunkCid = await encode(chunkBytes)
@@ -114,16 +115,15 @@ const chunkyStore = () => {
      *  @returns {Uint8Array} - Requested slice of data
      */
     const read = async (startOffset: number, length: number, { root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, debugCallback?: Function): Promise<Uint8Array> => {
-
         if (index === undefined) {
             if (root === undefined) throw new Error(`Missing root, please provide an index or root as arg`)
-            const { indexStruct } = await readIndex(root, get, decode)
-            index = indexStruct
+            index = await readIndex(root, get, decode)
         }
+        const { indexStruct } = index
         const endOffset = startOffset + length
-        if (startOffset > index.byteArraySize) throw new Error(`Start offset out of range ${startOffset} > buffer size ${index.byteArraySize}`)
-        if (endOffset > index.byteArraySize) throw new Error(`End offset out of range ${endOffset} > buffer size ${index.byteArraySize}`)
-        const startOffsetsIndexed = index.startOffsets
+        if (startOffset > indexStruct.byteArraySize) throw new Error(`Start offset out of range ${startOffset} > buffer size ${indexStruct.byteArraySize}`)
+        if (endOffset > indexStruct.byteArraySize) throw new Error(`End offset out of range ${endOffset} > buffer size ${indexStruct.byteArraySize}`)
+        const startOffsetsIndexed = indexStruct.startOffsets
         const startOffsetArray = Array.from(startOffsetsIndexed.keys())
         const selectedChunks = relevantChunks(startOffsetArray, startOffset, endOffset)
         const resultBuffer: Uint8Array = new Uint8Array(length)
@@ -184,10 +184,14 @@ const chunkyStore = () => {
      *  
      *  @returns {{any, any,  {cid: any, bytes: Uint8Array }[]} } root, index, blocks - A data structure containing the chunks (to persist) and the root handle
      */
-    const append = async ({ root, decode, get }: { root?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }): Promise<{ root: any, index: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
+    const append = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
 
-        if (root === undefined) throw new Error(`Missing root, please provide the predecessor root as arg`)
-        const { indexStruct: origIndex, indexBuffer: origIndexBuffer } = await readIndex(root, get, decode)
+        if (index === undefined) {
+            if (root === undefined) throw new Error(`Missing root, please provide the predecessor root as arg`)
+            index = await readIndex(root, get, decode)
+        }
+
+        const { indexStruct: origIndex, indexBuffer: origIndexBuffer } = index
         const { startOffsets: origStartOffsets, indexSize: origIndexSize, byteArraySize: origByteArraySize } = origIndex
         const origStartOffsetArray: number[] = Array.from(origStartOffsets.keys())
 
@@ -209,8 +213,9 @@ const chunkyStore = () => {
         const appendStartOffsets: Map<number, any> = new Map(origStartOffsets)
         const appendIndexSize: number = origIndexSize + appendOffsets.length - 1
         const appendByteArraySize: number = origByteArraySize + buf.length
-        const appendIndex: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets: appendStartOffsets /*, endOffsets*/, indexSize: appendIndexSize, byteArraySize: appendByteArraySize }
+        const appendIndexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number } = { startOffsets: appendStartOffsets /*, endOffsets*/, indexSize: appendIndexSize, byteArraySize: appendByteArraySize }
         const appendIndexBuffer = new Uint8Array(appendIndexSize * blockSize + shift)
+        const appendIndex = {indexStruct: appendIndexStruct, indexBuffer: appendIndexBuffer}
         for (const absoluteAppendOffset of appendOffsets.values()) {
             const chunkBytes = overlapBuffer.subarray(lastAbsoluteAppendOffset, absoluteAppendOffset)
             const chunkCid = await encode(chunkBytes)
@@ -238,7 +243,6 @@ const chunkyStore = () => {
 
         return { root: appendRoot, index: appendIndex, blocks: appendBlocks }
     }
-
 
 
     // expected format |<-- index control (4 bytes) -->|<-- index size (4 bytes) -->|<-- byte array size (4 bytes) -->|<-- chunk start offset (4 bytes) -->|<-- chunk CID (36 bytes) -->|...

@@ -145,16 +145,16 @@ describe("Chunky bytes", function () {
 
         const { root, index, blocks } = await create({ buf, chunk: buzhash, encode })
 
-        index.startOffsets.forEach((cid, offset) => console.log(`Offset ${offset} -> block ${cid.toString()}`))
+        index.indexStruct.startOffsets.forEach((cid, offset) => console.log(`Offset ${offset} -> block ${cid.toString()}`))
 
         // same size, accounts for additional root block 
-        assert.equal(index.indexSize, blocks.length - 1)
+        assert.equal(index.indexStruct.indexSize, blocks.length - 1)
         // last block is the root
         assert.equal(root, blocks[blocks.length - 1].cid)
         // first cids match
-        assert.equal(index.startOffsets.get(0), blocks[0].cid)
+        assert.equal(index.indexStruct.startOffsets.get(0), blocks[0].cid)
         // all index and block cids match
-        const cids = Array.from(index.startOffsets.values())
+        const cids = Array.from(index.indexStruct.startOffsets.values())
         cids.forEach((val, index) => assert.equal(val, blocks[index].cid))
     })
 
@@ -190,6 +190,44 @@ describe("Chunky bytes", function () {
 
         compareBlocks(b3, b4);
     })
+
+    test("persist / query by passing internal index reference rather than root", async () => {
+        const RECORD_COUNT = 2000
+        const RECORD_SIZE_BYTES = 36
+
+        // demo binary data
+        const buf = new Uint8Array(RECORD_COUNT * RECORD_SIZE_BYTES)
+        let cursor = 0
+        const originalRecords = []
+        for (let index = 0; index < RECORD_COUNT; index++) {
+            const demoRecord = uuidV4();
+            originalRecords.push(demoRecord)
+            //const bytes = new TextEncoder().encode(demoRecord)
+            const bytes = uuidParse(demoRecord)
+            buf.set(bytes, cursor * RECORD_SIZE_BYTES)
+            cursor++
+        }
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read } = chunkyStore()
+        const { fastcdc, buzhash } = chunkerFactory({ fastAvgSize: 512 })
+
+        // persist chunked binary data
+        const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
+        blocks.forEach(block => put(block))
+        console.log(blocks.length)
+
+        // extract a slice of the chunked by passing the index reference rather than root
+        const recordBytes = await read(999 * RECORD_SIZE_BYTES, RECORD_SIZE_BYTES, { index, decode, get })
+
+        // decode binary data into business domain
+        const recordFound = uuidStringify(recordBytes)
+        //const recordFound = new TextDecoder().decode(recordBytes)
+        assert.equal(recordFound, originalRecords[999])
+    })
+
 
 })
 

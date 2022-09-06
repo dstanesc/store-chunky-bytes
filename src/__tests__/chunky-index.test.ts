@@ -31,15 +31,15 @@ describe("Chunky index", function () {
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
         origBlocks.forEach(block => put(block))
 
-        console.log(origIndex.startOffsets)
+        console.log(origIndex.indexStruct.startOffsets)
 
         const { indexStruct, indexBuffer } = await readIndex(origRoot, get, decode)
 
         console.log(indexStruct.startOffsets)
 
-        assert.deepEqual(origIndex.startOffsets, indexStruct.startOffsets)
-        assert.deepEqual(origIndex.indexSize, indexStruct.indexSize)
-        assert.deepEqual(origIndex.byteArraySize, indexStruct.byteArraySize)
+        assert.deepEqual(origIndex.indexStruct.startOffsets, indexStruct.startOffsets)
+        assert.deepEqual(origIndex.indexStruct.indexSize, indexStruct.indexSize)
+        assert.deepEqual(origIndex.indexStruct.byteArraySize, indexStruct.byteArraySize)
     })
 
 
@@ -60,9 +60,9 @@ describe("Chunky index", function () {
 
         const { indexStruct, indexBuffer } = await readIndex(origRoot, get, decode)
 
-        assert.deepEqual(origIndex.startOffsets, indexStruct.startOffsets)
-        assert.deepEqual(origIndex.indexSize, indexStruct.indexSize)
-        assert.deepEqual(origIndex.byteArraySize, indexStruct.byteArraySize)
+        assert.deepEqual(origIndex.indexStruct.startOffsets, indexStruct.startOffsets)
+        assert.deepEqual(origIndex.indexStruct.indexSize, indexStruct.indexSize)
+        assert.deepEqual(origIndex.indexStruct.byteArraySize, indexStruct.byteArraySize)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
@@ -70,15 +70,15 @@ describe("Chunky index", function () {
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
         appendBlocks.forEach(block => put(block))
 
-        console.log(appendIndex.startOffsets)
+        console.log(appendIndex.indexStruct.startOffsets)
 
         const {indexStruct: readAppendIndex } = await readIndex(appendRoot, get, decode)
 
         console.log(readAppendIndex.startOffsets)
 
-        assert.deepEqual(appendIndex.startOffsets, readAppendIndex.startOffsets)
-        assert.deepEqual(appendIndex.indexSize, readAppendIndex.indexSize)
-        assert.deepEqual(appendIndex.byteArraySize, readAppendIndex.byteArraySize)
+        assert.deepEqual(appendIndex.indexStruct.startOffsets, readAppendIndex.startOffsets)
+        assert.deepEqual(appendIndex.indexStruct.indexSize, readAppendIndex.indexSize)
+        assert.deepEqual(appendIndex.indexStruct.byteArraySize, readAppendIndex.byteArraySize)
     })
 
 })

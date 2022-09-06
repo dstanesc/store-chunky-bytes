@@ -62,14 +62,14 @@ describe("Chunky append", function () {
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
         origBlocks.forEach(block => put(block))
-        console.log(origIndex.startOffsets)
+        console.log(origIndex.indexStruct.startOffsets)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
         appendBlocks.forEach(block => put(block))
-        console.log(appendIndex.startOffsets)
+        console.log(appendIndex.indexStruct.startOffsets)
 
         const retrievedRecords1 = await retrieveRecords(read, 0, RECORD_COUNT, { root: origRoot, decode, get })
         assert.equal(startRecords.length, retrievedRecords1.length)
@@ -96,14 +96,14 @@ describe("Chunky append", function () {
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: buzhash, encode })
         origBlocks.forEach(block => put(block))
-        console.log(origIndex.startOffsets)
+        console.log(origIndex.indexStruct.startOffsets)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: buzhash, encode })
         appendBlocks.forEach(block => put(block))
-        console.log(appendIndex.startOffsets)
+        console.log(appendIndex.indexStruct.startOffsets)
 
         const retrievedRecords1 = await retrieveRecords(read, 0, RECORD_COUNT, { root: origRoot, decode, get })
         assert.equal(startRecords.length, retrievedRecords1.length)
