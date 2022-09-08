@@ -73,7 +73,7 @@ const recordBytes = await read(startOffset, sliceLength, { root: appendRoot, dec
 
 For more details see the [append tests](https://github.com/dstanesc/store-chunky-bytes/blob/3f80f265ffed67df4d12cbcf8380ab19e9827050/src/__tests__/chunky-append.test.ts#L16)
 
-## Update Data
+### Update Data
 
 ```js
 const buf2 = ... // byte array to replace original section
