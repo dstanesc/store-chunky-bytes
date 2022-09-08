@@ -16,9 +16,9 @@ The intended usage is to persist and access collections of fixed size records. I
 
 ## Updates
 
-`v0.0.2` - API addition. Append data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of new chunks
-`v0.0.3` - Breaking change. Introduce support to upcoming features by restructuring the index persisted structure - reducing size and moving from absolute to relative offsets 
-`v0.0.4` - API addition. Update data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of modified chunks
+- `v0.0.2` - API addition. Append data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of new chunks
+- `v0.0.3` - Breaking change. Introduce support to upcoming features by restructuring the index persisted structure - reducing size and moving from absolute to relative offsets 
+- `v0.0.4` - API addition. Update data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of modified chunks
 
 ## Usage
 
