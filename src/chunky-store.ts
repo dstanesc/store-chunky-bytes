@@ -242,6 +242,25 @@ const chunkyStore = () => {
         return { root: appendRoot, index: appendIndex, blocks: appendBlocks }
     }
 
+    /*
+     *  Update an existing chunked array based on the supplied buffer. The behavior is correct only if:
+     *
+     *  1. the same chunking algorithm is used as in the original `create`
+     *  2. the chunking algorithm is content-defined
+     * 
+     *  If above conditions are met, the function will return the incremental blocks and a new root. 
+     *  The new root can be used to read any slice of data from the combined byte arrays.
+     *  
+     *  @param {any} root - The rood content identifier of a previous chunked array as returned by the `create` function
+     *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
+     *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
+     *  @param {Uint8Array} buff - Input buffer for the update
+     *  @param {(data: Uint8Array) => Uint32Array} chunk - Chunking algorithm to apply on the input. Should return a list of chunk start offsets
+     *  @param {(chunkBytes: Uint8Array) => Promise<any> } encode - Cid encoding function
+     *  @param {number} startOffset - The offset to apply changes from
+     * 
+     *  @returns {{any, any,  {cid: any, bytes: Uint8Array }[]} } root, index, blocks - A data structure containing the chunks (to persist) and the root handle
+     */
     const update = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { buf, chunk, encode }: { buf: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }, startOffset: number): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
         if (index === undefined) {
             if (root === undefined) throw new Error(`Missing root, please provide the index or root as arg`)
