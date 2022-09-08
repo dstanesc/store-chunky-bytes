@@ -100,4 +100,4 @@ npm run test
 
 ## Licenses
 
-Licensed under either of [Apache](./LICENSE-APACHE) of [MIT](./LICENSE-MIT) at your option.
+Licensed under either [Apache](./LICENSE-APACHE) or [MIT](./LICENSE-MIT) at your option.
