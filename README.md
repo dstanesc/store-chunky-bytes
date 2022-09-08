@@ -87,6 +87,8 @@ updateBlocks.forEach(block => put(block))
 
 ```
 
+For more details see the [update tests](https://github.com/dstanesc/store-chunky-bytes/blob/af396ff31106438d98f544f31e0923c6c5db6ae4/src/__tests__/chunky-update.test.ts#L22)
+
 To keep library size, dependencies and flexibility under control the `blockStore`, the content identifier `encode/decode` and the `chunking` functionality are not part of the library. However, all batteries are included. The [test utilities](https://github.com/dstanesc/store-chunky-bytes/blob/main/src/__tests__/util.ts) offer basic functionality for reuse and extension.
 
 ## Build
