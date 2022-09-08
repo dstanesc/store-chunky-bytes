@@ -352,12 +352,11 @@ const chunkyStore = () => {
 
         const updateBlocks: { cid: any, bytes: Uint8Array }[] = [] // {cid, bytes}
 
-
         let checksum = 0
         let beforePrevOffset = 0
         let prevOffset = 0
         let pos = shift
-        let indexCursor: number
+        let indexCursor = 0
 
         // reuse chunks before change
         for (let i = 0; i < firstChunkOffsetIndex; i++) {
@@ -375,9 +374,9 @@ const chunkyStore = () => {
                 checksum += relativeOffset
             } else break
         }
-
+        console.log(checksum)
         // encode new chunks
-        beforePrevOffset = origStartOffsetArray[firstChunkOffsetIndex - 1]
+        beforePrevOffset = firstChunkOffsetIndex > 0 ? origStartOffsetArray[firstChunkOffsetIndex - 1]: 0
         prevOffset = firstChunkOffset
         for (const updateOffset of updateOffsets.values()) {
             const chunkBytes = targetBuffer.subarray(targetBufferCursor(prevOffset), updateOffset)
@@ -394,7 +393,7 @@ const chunkyStore = () => {
             pos += blockSize
             checksum += relativeOffset
         }
-
+       
         // reuse chunks after change
         const boundary = prevOffset
         prevOffset = beforePrevOffset

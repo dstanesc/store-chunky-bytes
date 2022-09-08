@@ -53,7 +53,8 @@ describe("Chunky update", function () {
 
         assert.deepEqual(updatingRecord, updatedRecord)
     })
-    
+
+
     test("persist / update / read multiple across update boundary", async () => {
 
         // demo binary data
@@ -86,6 +87,41 @@ describe("Chunky update", function () {
         assert.deepEqual(updatingRecords, updatedRecords.slice(0, 20))
         assert.deepEqual(startRecords.slice(RECORD_UPDATE_OFFSET + 20, RECORD_UPDATE_OFFSET + 30), updatedRecords.slice(20, 10))
     })
+
+    test("persist / update at beginning", async () => {
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, update } = chunkyStore()
+        const { fastcdc, buzhash } = chunkerFactory({ fastAvgSize: 512 })
+
+        // persist chunked binary data
+        const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
+        blocks.forEach(block => put(block))
+
+
+        // demo binary data to update
+        const { buf: buf2, records: updatingRecords } = demoByteArray(RECORD_UPDATE_COUNT, RECORD_SIZE_BYTES)
+
+        // update from buf2 @ RECORD_UPDATE_OFFSET
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, 0)
+        updateBlocks.forEach(block => put(block))
+
+        // read one
+        const updatedRecords = await retrieveRecords(read, 0, RECORD_UPDATE_COUNT + 10, { root: updateRoot, index: updateIndex, decode, get })
+
+        console.log(updatingRecords)
+        console.log(updatedRecords)
+
+        assert.deepEqual(updatingRecords, updatedRecords.slice(0, 20))
+        assert.deepEqual(startRecords.slice(20, 30), updatedRecords.slice(20, 30))
+    })
+
+
 
     test("persist / update debug", async () => {
 
@@ -193,6 +229,7 @@ describe("Chunky update", function () {
         assert.deepEqual(unmodifiedSliceEnd, originalSliceEnd)
     })
 })
+
 
 const readUInt = (buffer: Uint8Array, pos: number): number => {
     const value = ((buffer[pos]) |
