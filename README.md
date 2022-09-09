@@ -19,6 +19,8 @@ The intended usage is to persist and access collections of fixed size records. I
 - `v0.0.2` - API addition. Append data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of new chunks
 - `v0.0.3` - Breaking change. Introduce support to upcoming features by restructuring the index persisted structure - reducing size and moving from absolute to relative offsets 
 - `v0.0.4` - API addition. Update data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of modified chunks
+- `v0.0.5` - Bugfixes
+- `v0.0.6` - Update enhancements. Improved heuristically chunk offset stability
 
 ## Usage
 
@@ -86,6 +88,8 @@ const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await upd
 updateBlocks.forEach(block => put(block))
 
 ```
+
+> Note: Update alg. tuned heuristically for best stability (ie. compare chunk offsets after update w/ full chunking of the updated buffer) results w/ `fastcdc`. 
 
 For more details see the [update tests](https://github.com/dstanesc/store-chunky-bytes/blob/af396ff31106438d98f544f31e0923c6c5db6ae4/src/__tests__/chunky-update.test.ts#L22)
 

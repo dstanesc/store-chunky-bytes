@@ -15,8 +15,9 @@ const RECORD_COUNT = 200
 const RECORD_UPDATE_COUNT = 20
 const RECORD_SIZE_BYTES = 36
 const RECORD_UPDATE_POSITION = 100
+const RECORD_UPDATE_POSITION_PRIOR_END = 170
 const RECORD_UPDATE_OFFSET = RECORD_SIZE_BYTES * RECORD_UPDATE_POSITION
-
+const RECORD_UPDATE_OFFSET_PRIOR_END = RECORD_SIZE_BYTES * RECORD_UPDATE_POSITION_PRIOR_END
 
 
 describe("Chunky update", function () {
@@ -227,6 +228,112 @@ describe("Chunky update", function () {
         assert.equal(unmodifiedSliceEnd.length, originalSliceEnd.length)
 
         assert.deepEqual(unmodifiedSliceEnd, originalSliceEnd)
+    })
+
+    test("chunk stability after full re-chunking, change in the middle", async () => {
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, update } = chunkyStore()
+        const { fastcdc } = chunkerFactory({ fastAvgSize: 512 })
+
+        // persist chunked binary data
+        const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
+        blocks.forEach(block => put(block))
+
+        console.log(index.indexStruct.startOffsets)
+
+        // demo binary data to update
+        const { buf: buf2, records: updatingRecords } = demoByteArray(RECORD_UPDATE_COUNT, RECORD_SIZE_BYTES)
+
+        // update from buf2 @ RECORD_UPDATE_OFFSET
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
+        updateBlocks.forEach(block => put(block))
+
+        console.log(updateIndex.indexStruct.startOffsets)
+
+        // read all updated
+        const updatedRecords = await retrieveRecords(read, 0, RECORD_COUNT, { root: updateRoot, index: updateIndex, decode, get })
+        assert.equal(startRecords.length, updatedRecords.length)
+
+        // read full buffer
+        const updatedBuffer = await read(0, RECORD_COUNT * RECORD_SIZE_BYTES, { root: updateRoot, decode, get })
+
+        // persist again full updated buffer
+        const { root: reRoot, index: reIndex, blocks: reBlocks } = await create({ buf: updatedBuffer, chunk: fastcdc, encode })
+        reBlocks.forEach(block => put(block))
+
+         // read full buffer again to assert binary equality
+         const reBuffer = await read(0, RECORD_COUNT * RECORD_SIZE_BYTES, { root: reRoot, decode, get })
+         assert.deepEqual(updatedBuffer, reBuffer)
+
+        // read again & test equality @ domain level
+        const reRecords = await retrieveRecords(read, 0, RECORD_COUNT, { root: reRoot, index: reIndex, decode, get })
+        assert.equal(reRecords.length, updatedRecords.length)
+        assert.deepEqual(reRecords, updatedRecords)
+
+        console.log(reIndex.indexStruct.startOffsets)
+
+        assert.equal(updateIndex.indexStruct.indexSize, reIndex.indexStruct.indexSize)
+        assert.deepEqual(updateIndex.indexStruct.startOffsets, reIndex.indexStruct.startOffsets)
+    })
+
+    test("chunk stability after full re-chunking, change close to the end", async () => {
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, update } = chunkyStore()
+        const { fastcdc } = chunkerFactory({ fastAvgSize: 512 })
+
+        // persist chunked binary data
+        const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
+        blocks.forEach(block => put(block))
+
+        console.log(index.indexStruct.startOffsets)
+
+        // demo binary data to update
+        const { buf: buf2, records: updatingRecords } = demoByteArray(RECORD_UPDATE_COUNT, RECORD_SIZE_BYTES)
+
+        // update from buf2 @ RECORD_UPDATE_OFFSET_PRIOR_END
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET_PRIOR_END)
+        updateBlocks.forEach(block => put(block))
+
+        console.log(updateIndex.indexStruct.startOffsets)
+
+        // read all updated
+        const updatedRecords = await retrieveRecords(read, 0, RECORD_COUNT, { root: updateRoot, index: updateIndex, decode, get })
+        assert.equal(startRecords.length, updatedRecords.length)
+
+        // read full buffer
+        const updatedBuffer = await read(0, RECORD_COUNT * RECORD_SIZE_BYTES, { root: updateRoot, decode, get })
+
+        // persist again full updated buffer
+        const { root: reRoot, index: reIndex, blocks: reBlocks } = await create({ buf: updatedBuffer, chunk: fastcdc, encode })
+        reBlocks.forEach(block => put(block))
+
+         // read full buffer again to assert binary equality
+         const reBuffer = await read(0, RECORD_COUNT * RECORD_SIZE_BYTES, { root: reRoot, decode, get })
+         assert.deepEqual(updatedBuffer, reBuffer)
+
+        // read again & test equality @ domain level
+        const reRecords = await retrieveRecords(read, 0, RECORD_COUNT, { root: reRoot, index: reIndex, decode, get })
+        assert.equal(reRecords.length, updatedRecords.length)
+        assert.deepEqual(reRecords, updatedRecords)
+
+        console.log(reIndex.indexStruct.startOffsets)
+
+        // Chunk stability for changes close to the end is low, heuristically  75% chances to identical chunks
+        // Enable below to check instability
+        // assert.equal(updateIndex.indexStruct.indexSize, reIndex.indexStruct.indexSize)
+        // assert.deepEqual(updateIndex.indexStruct.startOffsets, reIndex.indexStruct.startOffsets)
     })
 })
 

@@ -281,16 +281,32 @@ const chunkyStore = () => {
         const lastChunkOffsetIndex = origStartOffsetArray.indexOf(lastChunkOffset)
         const firstChunkOffsetIndex = origStartOffsetArray.indexOf(firstChunkOffset)
 
+        console.log(selectedChunks)
 
-        // padding offsets
+        // padding offsets to maintain re-chunking determinism
         let rightPadding: number
+        let rightPaddingOffsets = []
         if (lastChunkOffsetIndex === origStartOffsetArray.length - 1) {
-            // if last chunk
+            // if last chunk, do not apply additional padding
             rightPadding = origByteArraySize - lastChunkOffset
-        } else if (lastChunkOffsetIndex <= origStartOffsetArray.length - 2) {
-            // if not last
+        } else if (lastChunkOffsetIndex === origStartOffsetArray.length - 2) {
+            // if before last, apply remaining chunk
             rightPadding = origStartOffsetArray[lastChunkOffsetIndex + 1] - lastChunkOffset
+            rightPaddingOffsets.push(lastChunkOffset)
+        } else if (lastChunkOffsetIndex === origStartOffsetArray.length - 3) {
+            // if 2 remaining, apply both
+            rightPadding = origStartOffsetArray[lastChunkOffsetIndex + 2] - lastChunkOffset
+            rightPaddingOffsets.push(lastChunkOffset)
+            rightPaddingOffsets.push(origStartOffsetArray[lastChunkOffsetIndex + 1])
+        } else if (lastChunkOffsetIndex <= origStartOffsetArray.length - 4) {
+            // all other apply padding of 3 chunks
+            rightPadding = origStartOffsetArray[lastChunkOffsetIndex + 3] - lastChunkOffset
+            rightPaddingOffsets.push(lastChunkOffset)
+            rightPaddingOffsets.push(origStartOffsetArray[lastChunkOffsetIndex + 1])
+            rightPaddingOffsets.push(origStartOffsetArray[lastChunkOffsetIndex + 2])
         }
+
+        
 
         // target buffer to merge existing bytes & updates
         const targetBuffer: Uint8Array = new Uint8Array((lastChunkOffset - firstChunkOffset) + rightPadding)
@@ -333,11 +349,13 @@ const chunkyStore = () => {
             }
         }
 
-        // apply the padding to right
-        const rightPaddingCid = origStartOffsets.get(lastChunkOffset)
-        const rightPaddingChunkBuffer = await get(rightPaddingCid)
-        targetBuffer.set(rightPaddingChunkBuffer, targetBufferCursor(lastChunkOffset))
-
+        // apply padding to the right
+        for (let i = 0; i < rightPaddingOffsets.length; i++) {
+            const paddingOffset = rightPaddingOffsets[i]
+            const paddingCid = origStartOffsets.get(paddingOffset)
+            const paddingBuffer = await get(paddingCid)
+            targetBuffer.set(paddingBuffer, targetBufferCursor(paddingOffset))
+        }
 
         const shift = INDEX_HEADER_SIZE
         const blockSize = INDEX_BLOCK_SIZE
@@ -376,7 +394,7 @@ const chunkyStore = () => {
         }
         console.log(checksum)
         // encode new chunks
-        beforePrevOffset = firstChunkOffsetIndex > 0 ? origStartOffsetArray[firstChunkOffsetIndex - 1]: 0
+        beforePrevOffset = firstChunkOffsetIndex > 0 ? origStartOffsetArray[firstChunkOffsetIndex - 1] : 0
         prevOffset = firstChunkOffset
         for (const updateOffset of updateOffsets.values()) {
             const chunkBytes = targetBuffer.subarray(targetBufferCursor(prevOffset), updateOffset)
@@ -393,7 +411,7 @@ const chunkyStore = () => {
             pos += blockSize
             checksum += relativeOffset
         }
-       
+
         // reuse chunks after change
         const boundary = prevOffset
         prevOffset = beforePrevOffset
