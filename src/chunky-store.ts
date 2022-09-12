@@ -45,7 +45,7 @@ const readBytes = (buffer: Uint8Array, pos: number, length: number): Uint8Array 
 const chunkyStore = () => {
 
     /*
-     *  Create chunks out of the input buffer
+     *  Create an array of binary blocks by chunking the input buffer. The blocks are content identified.
      *
      *  @param {Uint8Array} buff - Input buffer to partition in (content defined) chunks
      *  @param {(data: Uint8Array) => Uint32Array} chunk - Chunking algorithm to apply on the input. Should return a list of chunk start offsets
@@ -103,7 +103,7 @@ const chunkyStore = () => {
     }
 
     /*
-     *  Read a slice of the data across chunk boundaries
+     *  Read a byte array slice
      *
      *  @param {number} startOffset - Zero-based valid index at which to begin extraction.
      *  @param {number} length - Number of bytes to read
@@ -165,7 +165,7 @@ const chunkyStore = () => {
     }
 
     /*
-     *  Append the input buffer to an existing chunked array. The behavior is correct only if:
+     *  Append the input byte array to an existing byte array. The behavior is correct only if:
      *
      *  1. the same chunking algorithm is used as in the original `create`
      *  2. the chunking algorithm is content-defined
@@ -243,13 +243,13 @@ const chunkyStore = () => {
     }
 
     /*
-     *  Update an existing chunked array based on the supplied buffer. The behavior is correct only if:
+     *  Update an existing byte array based on the supplied buffer. The behavior is correct only if:
      *
      *  1. the same chunking algorithm is used as in the original `create`
      *  2. the chunking algorithm is content-defined
      * 
      *  If above conditions are met, the function will return the incremental blocks and a new root. 
-     *  The new root can be used to read any slice of data from the combined byte arrays.
+     *  The new root can be used to read any slice of data from the resulting byte array.
      *  
      *  @param {any} root - The rood content identifier of a previous chunked array as returned by the `create` function
      *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
@@ -455,6 +455,26 @@ const chunkyStore = () => {
     }
 
 
+    /*
+     *  Remove (delete) a byte array fragment. The behavior is correct only if:
+     *
+     *  1. the same chunking algorithm is used as in the original `create`
+     *  2. the chunking algorithm is content-defined
+     * 
+     *  If above conditions are met, the function will return the incremental blocks and a new root. 
+     *  The new root can be used to read any slice of data from the resulting byte array
+     *  
+     *  @param {any} root - The rood content identifier of a previous chunked array as returned by the `create` function
+     *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
+     *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
+     *  @param {Uint8Array} buff - Input buffer for the update
+     *  @param {(data: Uint8Array) => Uint32Array} chunk - Chunking algorithm to apply on the input. Should return a list of chunk start offsets
+     *  @param {(chunkBytes: Uint8Array) => Promise<any> } encode - Cid encoding function
+     *  @param {number} startOffset - The remove start offset
+     *  @param {number} length - The length of the byte array fragment to remove
+     * 
+     *  @returns {{any, any,  {cid: any, bytes: Uint8Array }[]} } root, index, blocks - A data structure containing the chunks (to persist) and the root handle
+     */
     const remove = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { chunk, encode }: { chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }, startOffset: number, length: number): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
 
         if (index === undefined) {
