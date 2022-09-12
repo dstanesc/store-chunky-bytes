@@ -89,7 +89,7 @@ describe("Chunky update", function () {
         assert.deepEqual(startRecords.slice(RECORD_UPDATE_OFFSET + 20, RECORD_UPDATE_OFFSET + 30), updatedRecords.slice(20, 10))
     })
 
-    test("persist / update at beginning", async () => {
+    test("persist / update at the beginning", async () => {
 
         // demo binary data
         const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
@@ -122,13 +122,47 @@ describe("Chunky update", function () {
         assert.deepEqual(startRecords.slice(20, 30), updatedRecords.slice(20, 30))
     })
 
+    test("persist / update at the end", async () => {
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, update } = chunkyStore()
+        const { fastcdc, buzhash } = chunkerFactory({ fastAvgSize: 512 })
+
+        // persist chunked binary data
+        const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
+        blocks.forEach(block => put(block))
+
+
+        // demo binary data to update
+        const { buf: buf2, records: updatingRecords } = demoByteArray(RECORD_UPDATE_COUNT, RECORD_SIZE_BYTES)
+
+        // update from buf2 @ RECORD_UPDATE_OFFSET
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, (RECORD_COUNT - RECORD_UPDATE_COUNT) * RECORD_SIZE_BYTES)
+        updateBlocks.forEach(block => put(block))
+
+        // read updated records
+        const updatedRecords = await retrieveRecords(read, (RECORD_COUNT - RECORD_UPDATE_COUNT) * RECORD_SIZE_BYTES, RECORD_UPDATE_COUNT, { root: updateRoot, index: updateIndex, decode, get })
+
+        console.log(updatingRecords)
+        console.log(updatedRecords)
+
+        assert.deepEqual(updatingRecords, updatedRecords)
+
+        // read updated records
+        const allRecords = await retrieveRecords(read, 0, RECORD_COUNT, { root: updateRoot, index: updateIndex, decode, get })
+        assert.deepEqual(startRecords.slice(0, RECORD_COUNT - RECORD_UPDATE_COUNT), allRecords.slice(0, RECORD_COUNT - RECORD_UPDATE_COUNT))
+    })
 
 
     test("persist / update debug", async () => {
 
         // demo binary data
         const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
-
 
         // configure chunky store
         const { get, put } = blockStore()
