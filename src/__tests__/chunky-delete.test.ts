@@ -19,7 +19,7 @@ const RECORD_DELETE_POSITION = 100
 const RECORD_DELETE_OFFSET = RECORD_SIZE_BYTES * RECORD_DELETE_POSITION
 
 
-describe("Chunky update", function () {
+describe("Chunky delete", function () {
 
     test("persist / delete / read all & validate deletion, start delete", async () => {
 
