@@ -108,6 +108,8 @@ const { root: deleteRoot, index: deleteIndex, blocks: deleteBlocks } = await rem
 deleteBlocks.forEach(block => put(block))
 ```
 
+For more details see the [remove tests](https://github.com/dstanesc/store-chunky-bytes/blob/002b19771eebe7b573b0f8cc123d889d5a4413d2/src/__tests__/chunky-delete.test.ts#L22)
+
 To keep library size, dependencies and flexibility under control the `blockStore`, the content identifier `encode/decode` and the `chunking` functionality are not part of the library. However, all batteries are included. The [test utilities](https://github.com/dstanesc/store-chunky-bytes/blob/main/src/__tests__/util.ts) offer basic functionality for reuse and extension.
 
 ## Build
