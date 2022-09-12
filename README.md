@@ -18,9 +18,10 @@ The intended usage is to persist and access collections of fixed size records. I
 
 - `v0.0.2` - API addition. Append data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of new chunks
 - `v0.0.3` - Breaking change. Introduce support to upcoming features by restructuring the index persisted structure - reducing size and moving from absolute to relative offsets 
-- `v0.0.4` - API addition. Update data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of modified chunks
+- `v0.0.4` - API addition. Update data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of chunks impacted by update
 - `v0.0.5` - Bugfixes
 - `v0.0.6` - Update enhancements. Improved heuristically chunk offset stability
+- `v0.0.7` - API addition. Remove fragments of data w/o retrieving the original byte array.  I/O efficiency - O(n), n - number of chunks impacted by removal
 
 ## Usage
 
@@ -54,7 +55,7 @@ const recordBytes = await read(startOffset, sliceLength, { root, decode, get })
 
 For more details see the [store tests](https://github.com/dstanesc/store-chunky-bytes/blob/39b4ed9e6fa0af28bdad7f732c941fcf3b599a7a/src/__tests__/chunky-store.test.ts#L18-L50).
 
-### Append Data
+### Append
 
 ```js
 const buf2 = ... // byte array to append
@@ -62,7 +63,7 @@ const buf2 = ... // byte array to append
 // append additional data
 // same chunking algorithm as in the creation phase required
 // mandatory content-defined chunking algorithm (eg. fastcdc. buzhash, etc.)
-// returns a new root and blocks incremental to original blocks
+// returns a new root and the new blocks
 const { root: appendRoot, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
 appendBlocks.forEach(block => put(block))
 
@@ -75,7 +76,7 @@ const recordBytes = await read(startOffset, sliceLength, { root: appendRoot, dec
 
 For more details see the [append tests](https://github.com/dstanesc/store-chunky-bytes/blob/3f80f265ffed67df4d12cbcf8380ab19e9827050/src/__tests__/chunky-append.test.ts#L16)
 
-### Update Data
+### Update
 
 ```js
 const buf2 = ... // byte array to replace original section
@@ -83,7 +84,7 @@ const buf2 = ... // byte array to replace original section
 // update original data 
 // same chunking algorithm as in the creation phase required
 // mandatory content-defined chunking algorithm (eg. fastcdc. buzhash, etc.)
-// returns a new root and the modified blocks
+// returns a new root and the new blocks
 const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
 updateBlocks.forEach(block => put(block))
 
@@ -91,7 +92,21 @@ updateBlocks.forEach(block => put(block))
 
 > Note: Update alg. tuned heuristically for best stability (ie. compare chunk offsets after update w/ full chunking of the updated buffer) results w/ `fastcdc`. 
 
-For more details see the [update tests](https://github.com/dstanesc/store-chunky-bytes/blob/af396ff31106438d98f544f31e0923c6c5db6ae4/src/__tests__/chunky-update.test.ts#L22)
+For more details see the [update tests](https://github.com/dstanesc/store-chunky-bytes/blob/2ced29bf28a55f0cd98a9434407414c09e0b795c/src/__tests__/chunky-delete.test.ts#L22)
+
+### Remove
+
+```js
+const startOffset = ...
+const sliceLength = ...
+
+// delete a slice from original data 
+// same chunking algorithm as in the creation phase required
+// mandatory content-defined chunking algorithm (eg. fastcdc. buzhash, etc.)
+// returns a new root and the new blocks
+const { root: deleteRoot, index: deleteIndex, blocks: deleteBlocks } = await remove({ root, decode, get }, { chunk: fastcdc, encode }, startOffset, sliceLength)
+deleteBlocks.forEach(block => put(block))
+```
 
 To keep library size, dependencies and flexibility under control the `blockStore`, the content identifier `encode/decode` and the `chunking` functionality are not part of the library. However, all batteries are included. The [test utilities](https://github.com/dstanesc/store-chunky-bytes/blob/main/src/__tests__/util.ts) offer basic functionality for reuse and extension.
 
