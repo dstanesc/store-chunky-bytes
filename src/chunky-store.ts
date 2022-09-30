@@ -107,7 +107,7 @@ const chunkyStore = () => {
      *
      *  @param {number} startOffset - Zero-based valid index at which to begin extraction.
      *  @param {number} length - Number of bytes to read
-     *  @param {any} root - THe rood content identifier as returned by the `create` function
+     *  @param {any} root - The root content identifier as returned by the `create` function
      *  @param {{ startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }} index (optional) - the cached index as returned by the `create` function
      *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
      *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
@@ -162,6 +162,23 @@ const chunkyStore = () => {
         if (cursor !== resultBuffer.byteLength) throw new Error(`alg. error, check code cursor=${cursor}, resultBuffer=${resultBuffer.byteLength}`)
 
         return resultBuffer
+    }
+
+    /*
+     *  Read all blocks, ie. full byte array
+     *
+     *  @param {any} root - The root content identifier as returned by the `create` function
+     *  @param {{ startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }} index (optional) - the cached index as returned by the `create` function
+     *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
+     *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
+     *  @returns {Uint8Array} - Requested slice of data
+     */
+    const readAll = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, debugCallback?: Function): Promise<Uint8Array> => {
+        if (index === undefined) {
+            if (root === undefined) throw new Error(`Missing root, please provide an index or root as arg`)
+            index = await readIndex(root, get, decode)
+        }
+        return await read(0, index.indexStruct.byteArraySize, {root, index, decode, get})
     }
 
     /*
@@ -671,7 +688,7 @@ const chunkyStore = () => {
         return { indexStruct: index, indexBuffer }
     }
 
-    return { create, read, append, update, remove, readIndex /* for testing only */ }
+    return { create, read, readAll, append, update, remove, readIndex /* for testing only */ }
 }
 
 export { chunkyStore }

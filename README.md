@@ -14,7 +14,7 @@ Used in conjunction with [content defined chunkers](https://www.npmjs.com/packag
 
 The intended usage is to persist and access collections of fixed size records. In this case the records can be retrieved extremely efficient (O1) based on the offsets computed externally using mathematic formulas rather than scanning the data.
 
-## Updates
+## Change Log
 
 - `v0.0.2` - API addition. Append data w/o retrieving the original byte array. I/O efficiency - O(n), n - number of new chunks
 - `v0.0.3` - Breaking change. Introduce support to upcoming features by restructuring the index persisted structure - reducing size and moving from absolute to relative offsets 
@@ -22,6 +22,7 @@ The intended usage is to persist and access collections of fixed size records. I
 - `v0.0.5` - Bugfixes
 - `v0.0.6` - Update enhancements. Improved heuristically chunk offset stability
 - `v0.0.7` - API addition. Remove fragments of data w/o retrieving the original byte array.  I/O efficiency - O(n), n - number of chunks impacted by removal
+- `v0.0.8` - API addition. Convenience function to read all blocks, ie. full byte array
 
 ## Usage
 
@@ -51,6 +52,9 @@ const sliceLength = ...
 
 // extract any slice of data 
 const recordBytes = await read(startOffset, sliceLength, { root, decode, get })
+
+// read all blocks, ie full byte array
+const allBytes = await readAll({ root, decode, get })
 ```
 
 For more details see the [store tests](https://github.com/dstanesc/store-chunky-bytes/blob/39b4ed9e6fa0af28bdad7f732c941fcf3b599a7a/src/__tests__/chunky-store.test.ts#L18-L50).
