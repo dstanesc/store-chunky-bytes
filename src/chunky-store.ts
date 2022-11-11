@@ -285,7 +285,11 @@ const chunkyStore = () => {
         }
         const { indexStruct: origIndexStruct, indexBuffer: origIndexBuffer } = index
         const { startOffsets: origStartOffsets, indexSize: origIndexSize, byteArraySize: origByteArraySize } = origIndexStruct
-        const endOffset = startOffset + buf.length
+        const endOffset = startOffset + buf.byteLength
+
+        if (buf.byteLength === 0) {
+            return { root, index, blocks: [] }
+        }
 
         if (startOffset > origIndexStruct.byteArraySize) throw new Error(`Start offset out of range ${startOffset} > buffer size ${origIndexStruct.byteArraySize}`)
         if (endOffset > origIndexStruct.byteArraySize) throw new Error(`End offset out of range ${endOffset} > buffer size ${origIndexStruct.byteArraySize}`)

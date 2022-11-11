@@ -22,6 +22,37 @@ const RECORD_UPDATE_OFFSET_PRIOR_END = RECORD_SIZE_BYTES * RECORD_UPDATE_POSITIO
 
 describe("Chunky update", function () {
 
+    test("persist / empty update", async () => {
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, update } = chunkyStore()
+        const { fastcdc, buzhash } = chunkerFactory({ fastAvgSize: 512 })
+
+        // persist chunked binary data
+        const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
+        blocks.forEach(block => put(block))
+
+
+        // demo binary data to update
+        const { buf: buf2, records: updatingRecord } = demoByteArray(0, RECORD_SIZE_BYTES)
+
+        // update from buf2 @ RECORD_UPDATE_OFFSET
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
+        updateBlocks.forEach(block => put(block))
+
+        // read one
+        const updatedRecord = await retrieveRecords(read, RECORD_UPDATE_OFFSET, 1, { root: updateRoot, index: updateIndex, decode, get })
+
+        console.log(startRecords[RECORD_UPDATE_POSITION])
+        console.log(updatedRecord)
+
+        assert.deepEqual(startRecords[RECORD_UPDATE_POSITION], updatedRecord[0])
+    })
 
     test("persist / update / read single", async () => {
 
