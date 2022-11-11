@@ -113,7 +113,7 @@ const chunkyStore = () => {
      *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
      *  @returns {Uint8Array} - Requested slice of data
      */
-    const read = async (startOffset: number, length: number, { root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, debugCallback?: Function): Promise<Uint8Array> => {
+    const read = async (startOffset: number, length: number, { root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }): Promise<Uint8Array> => {
         if (index === undefined) {
             if (root === undefined) throw new Error(`Missing root, please provide an index or root as arg`)
             index = await readIndex(root, get, decode)
@@ -127,9 +127,7 @@ const chunkyStore = () => {
         const selectedChunks = relevantChunks(startOffsetArray, startOffset, endOffset, 1)
         const resultBuffer: Uint8Array = new Uint8Array(length)
         let cursor = 0
-        let blocksLoaded = 0
         for (let i = 0; i < selectedChunks.length; i++) {
-            blocksLoaded++
             const chunkOffset = selectedChunks[i]
             const chunkCid = startOffsetsIndexed.get(chunkOffset)
             const chunkBuffer = await get(chunkCid)
@@ -152,11 +150,6 @@ const chunkyStore = () => {
                 cursor += endOffset - chunkOffset
                 break
             }
-        }
-
-        if (debugCallback) {
-
-            debugCallback({ blocksLoaded })
         }
 
         if (cursor !== resultBuffer.byteLength) throw new Error(`alg. error, check code cursor=${cursor}, resultBuffer=${resultBuffer.byteLength}`)
