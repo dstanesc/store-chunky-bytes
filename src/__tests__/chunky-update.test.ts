@@ -48,10 +48,8 @@ describe("Chunky update", function () {
         // read one
         const updatedRecord = await retrieveRecords(read, RECORD_UPDATE_OFFSET, 1, { root: updateRoot, index: updateIndex, decode, get })
 
-        console.log(startRecords[RECORD_UPDATE_POSITION])
-        console.log(updatedRecord)
-
-        assert.deepEqual(startRecords[RECORD_UPDATE_POSITION], updatedRecord[0])
+        assert.deepStrictEqual(updateBlocks.length, 0)
+        assert.deepStrictEqual(startRecords[RECORD_UPDATE_POSITION], updatedRecord[0])
     })
 
     test("persist / update / read single", async () => {

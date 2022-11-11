@@ -25,6 +25,7 @@ The intended usage is to persist and access collections of fixed size records. I
 - `v0.0.8` - API addition. Convenience function to read all blocks, ie. full byte array
 - `v0.0.9` - Bugfix. Tolerate empty appends, also combined w/ empty creations
 - `v0.0.10`- API addition. Bulk to combine append and update in a single roundtrip
+- `v0.0.11`- Bugfix. Tolerate empty updates
 
 ## Usage
 
