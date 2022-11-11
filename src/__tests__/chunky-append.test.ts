@@ -48,6 +48,37 @@ describe("Chunky append", function () {
 
     })
 
+
+    test("append on empty (faulty) original still works", async () => {
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, append } = chunkyStore()
+        const { fastcdc } = chunkerFactory({ fastAvgSize: 512 })
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(0, RECORD_SIZE_BYTES)
+        assert.equal(buf.byteLength, 0)
+
+        // persist empty array
+        const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
+        origBlocks.forEach(block => put(block))
+
+        // demo binary data to append
+        const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
+        // append binary data
+        const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
+        appendBlocks.forEach(block => put(block))
+
+        assert.equal(origIndex.indexStruct.byteArraySize, 0)
+
+        const appendRecordBuffer = await read(0, RECORD_SIZE_BYTES, { root: appendRoot,  decode, get })
+        const appendRecordFound = uuidStringify(appendRecordBuffer)
+
+        assert.strictEqual(appendedRecords[0], appendRecordFound)
+    })
+
     test("append and retrieve full data to existing chunky bytes, fastcdc", async () => {
 
         // demo binary data

@@ -171,7 +171,7 @@ const chunkyStore = () => {
             if (root === undefined) throw new Error(`Missing root, please provide an index or root as arg`)
             index = await readIndex(root, get, decode)
         }
-        return await read(0, index.indexStruct.byteArraySize, {root, index, decode, get})
+        return await read(0, index.indexStruct.byteArraySize, { root, index, decode, get })
     }
 
     /*
@@ -202,6 +202,11 @@ const chunkyStore = () => {
         const { indexStruct: origIndex, indexBuffer: origIndexBuffer } = index
         const { startOffsets: origStartOffsets, indexSize: origIndexSize, byteArraySize: origByteArraySize } = origIndex
         const origStartOffsetArray: number[] = Array.from(origStartOffsets.keys())
+
+        if (origByteArraySize === 0) {
+            // if empty original, create new 
+            return await create({ buf, chunk, encode })
+        }
 
         const lastChunkOffset = origStartOffsetArray[origStartOffsetArray.length - 1]
         const lastChunkCid = origStartOffsets.get(lastChunkOffset)
