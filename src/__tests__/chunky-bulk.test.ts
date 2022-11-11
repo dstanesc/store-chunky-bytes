@@ -18,13 +18,13 @@ const RECORD_SIZE_BYTES = 36
 const RECORD_UPDATE_POSITION = 100
 const RECORD_UPDATE_POSITION_PRIOR_END = 170
 const RECORD_UPDATE_OFFSET = RECORD_SIZE_BYTES * RECORD_UPDATE_POSITION
-
+const RECORD_UPDATE_NEXT_OFFSET = RECORD_UPDATE_OFFSET + (RECORD_UPDATE_COUNT * RECORD_SIZE_BYTES)
 
 
 describe("Chunky bulk", function () {
 
 
-    test("compare discrete append and update w/ bulk", async () => {
+    test("compare discrete append and update w/ bulk append and single update", async () => {
 
         // demo binary data
         const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
@@ -64,7 +64,7 @@ describe("Chunky bulk", function () {
         // demo binary data to update
         const { buf: buf3, records: updatingRecords } = demoByteArray(RECORD_UPDATE_COUNT, RECORD_SIZE_BYTES)
 
-        // update from buf2 @ RECORD_UPDATE_OFFSET
+        // update from buf3 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root: appendRoot, decode, get }, { buf: buf3, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
         updateBlocks.forEach(block => put(block))
 
@@ -74,7 +74,7 @@ describe("Chunky bulk", function () {
         /**
          *  Bulk append, update
          */
-        const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { appendBuffer: buf2, updateBuffer: buf3, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
+        const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { chunk: fastcdc, encode }, buf2, [{ updateBuffer: buf3, updateStartOffset: RECORD_UPDATE_OFFSET }])
 
         // read all bulk
         const bulkRecords = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: bulkRoot, index: bulkIndex, decode, get })
@@ -82,7 +82,72 @@ describe("Chunky bulk", function () {
         assert.deepStrictEqual(allRecords, bulkRecords)
         assert.strictEqual(updateRoot.toString(), bulkRoot.toString())
         assert.deepStrictEqual(updateIndex.indexStruct, bulkIndex.indexStruct)
-        assert.deepStrictEqual([...appendBlocks, ...updateBlocks], bulkBlocks)
+    })
+
+    test("compare discrete append and update w/ bulk append and multiple updates", async () => {
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(RECORD_COUNT, RECORD_SIZE_BYTES);
+
+        /**
+         * Discrete create + append + update + update
+         */
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, append, update, bulk } = chunkyStore()
+        const { fastcdc } = chunkerFactory({ fastAvgSize: 512 })
+
+        // initial  data
+        const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
+        origBlocks.forEach(block => put(block))
+
+        // demo binary data to append
+        const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
+        // append binary data
+        const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
+        appendBlocks.forEach(block => put(block))
+
+        const retrievedRecords1 = await retrieveRecords(read, 0, RECORD_COUNT, { root: origRoot, index: origIndex, decode, get })
+        assert.equal(startRecords.length, retrievedRecords1.length)
+        assert.deepEqual(startRecords, retrievedRecords1)
+
+        const retrievedRecords2 = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: appendRoot, index: appendIndex, decode, get })
+
+        const recordUnion = startRecords.concat(appendedRecords)
+        assert.equal(recordUnion.length, retrievedRecords2.length)
+        assert.deepEqual(recordUnion, retrievedRecords2)
+
+        // demo binary data to update
+        const { buf: buf3, records: updatingRecords } = demoByteArray(RECORD_UPDATE_COUNT, RECORD_SIZE_BYTES)
+
+        // update from buf3 @ RECORD_UPDATE_OFFSET
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root: appendRoot, decode, get }, { buf: buf3, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
+        updateBlocks.forEach(block => put(block))
+
+        // demo binary data to update
+        const { buf: buf4, records: updatingRecords2 } = demoByteArray(RECORD_UPDATE_COUNT - 10, RECORD_SIZE_BYTES)
+
+        // update from buf4 @ RECORD_UPDATE_OFFSET + ( RECORD_UPDATE_COUNT * RECORD_SIZE_BYTES) ie. after first update
+        const { root: updateRoot2, index: updateIndex2, blocks: updateBlocks2 } = await update({ root: updateRoot, decode, get }, { buf: buf4, chunk: fastcdc, encode }, RECORD_UPDATE_NEXT_OFFSET)
+        updateBlocks2.forEach(block => put(block))
+
+        // read all discrete
+        const allRecords = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: updateRoot, index: updateIndex, decode, get })
+
+        /**
+         *  Create + bulk append and updates
+         */
+        const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { chunk: fastcdc, encode }, buf2, [{ updateBuffer: buf3, updateStartOffset: RECORD_UPDATE_OFFSET }, { updateBuffer: buf4, updateStartOffset: RECORD_UPDATE_NEXT_OFFSET }])
+        bulkBlocks.forEach(block => put(block))
+
+        // read all bulk
+        const bulkRecords = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: bulkRoot, index: bulkIndex, decode, get })
+
+        assert.deepStrictEqual(allRecords, bulkRecords)
+        assert.strictEqual(updateRoot2.toString(), bulkRoot.toString())
+        assert.deepStrictEqual(updateIndex2.indexStruct, bulkIndex.indexStruct)
     })
 })
 

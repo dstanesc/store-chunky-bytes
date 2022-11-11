@@ -26,6 +26,7 @@ The intended usage is to persist and access collections of fixed size records. I
 - `v0.0.9` - Bugfix. Tolerate empty appends, also combined w/ empty creations
 - `v0.0.10`- API addition. Bulk to combine append and update in a single roundtrip
 - `v0.0.11`- Bugfix. Tolerate empty updates
+- `v0.0.12`- API addition.  Bulk multiple updates. Bulk to combine append and multiple updates in a single roundtrip.
 
 ## Usage
 
@@ -106,9 +107,11 @@ For more details see the [update tests](https://github.com/dstanesc/store-chunky
 
 ```js
 const buf2 = ... // append buffer
-const buf3 = ... // update buffer
-// combines append and update operations in this order
-const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { appendBuffer: buf2, updateBuffer: buf3, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
+const buf3 = ... // update buffer 1
+const buf3 = ... // update buffer 2
+// combines append and multiple update operations 
+const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { chunk: fastcdc, encode }, buf2, [{ updateBuffer: buf3, updateStartOffset: RECORD_UPDATE_OFFSET }, { updateBuffer: buf4, updateStartOffset: RECORD_UPDATE_NEXT_OFFSET }])
+bulkBlocks.forEach(block => put(block))
 ```
 
 ### Remove

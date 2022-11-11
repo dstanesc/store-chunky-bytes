@@ -476,26 +476,59 @@ const chunkyStore = () => {
     }
 
     /**
-     * Bulk operation combining `append` and `update` in a single roundtrip
+     * Bulk operation combining multiple updates in a single roundtrip
      * 
      *  @param {any} root - The root content identifier of a previous chunked array as returned by the `create`, `update` or `append` function
      *  @param index - Optional offset lookup index as returned by the `create`, `update` or `append` function
      *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
      *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
-     *  @param {Uint8Array} appendBuffer - Input buffer for the append
-     *  @param {Uint8Array} updateBuffer - Input buffer for the update
      *  @param {(data: Uint8Array) => Uint32Array} chunk - Chunking algorithm to apply on the input. Should return a list of chunk start offsets
      *  @param {(chunkBytes: Uint8Array) => Promise<any> } encode - Cid encoding function
+     *  @param {Uint8Array} updateBuffer - Input buffer for the update
      *  @param {number} updateStartOffset - The offset to apply changes from
      *
      */
-    const bulk = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { appendBuffer, updateBuffer, chunk, encode }: { appendBuffer: Uint8Array, updateBuffer: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }, updateStartOffset: number): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
+    const bulkUpdate = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { chunk, encode }: { chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }, updates: { updateBuffer: Uint8Array, updateStartOffset: number } []): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
+        let updateRoot =  root 
+        let updateIndex = index
+        const blocks = []
+        for (let i = 0; i < updates.length; i++) {
+            const { updateBuffer, updateStartOffset } = updates[i]
+            const { root: tempRoot, index: tempIndex, blocks: tempBlocks } = await update({ root: updateRoot, index: updateIndex, decode, get }, { buf: updateBuffer, chunk, encode }, updateStartOffset)  
+            updateRoot = tempRoot
+            updateIndex = tempIndex
+            blocks.push(...tempBlocks)
+        }
+        return {root: updateRoot, index: updateIndex, blocks }
+    }
+
+
+    /**
+     * Bulk operation combining `append` and `bulkUpdate` in a single roundtrip
+     * 
+     *  @param {any} root - The root content identifier of a previous chunked array as returned by the `create`, `update` or `append` function
+     *  @param index - Optional offset lookup index as returned by the `create`, `update` or `append` function
+     *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
+     *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
+     *  @param {(data: Uint8Array) => Uint32Array} chunk - Chunking algorithm to apply on the input. Should return a list of chunk start offsets
+     *  @param {(chunkBytes: Uint8Array) => Promise<any> } encode - Cid encoding function
+     *  @param {Uint8Array} appendBuffer - Input buffer for the append
+     *  @param {Uint8Array} updateBuffer - Input buffer for the update
+     *  @param {number} updateStartOffset - The offset to apply changes from
+     *
+     */
+    const bulk = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { chunk, encode }: { chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }, appendBuffer: Uint8Array, updates: { updateBuffer: Uint8Array, updateStartOffset: number } []): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
+        const blocks = []
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root, index, decode, get }, { buf: appendBuffer, chunk, encode })
-        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root: appendRoot, index: appendIndex, decode, get }, { buf: updateBuffer, chunk, encode }, updateStartOffset)
-        const blocks = [...appendBlocks, ...updateBlocks]
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await bulkUpdate({ root: appendRoot, index: appendIndex, decode, get }, { chunk, encode }, updates )
+        //const blocks = [...appendBlocks, ...updateBlocks]
+        blocks.push(...appendBlocks)
+        blocks.push(...updateBlocks)
         return { root: updateRoot, index: updateIndex, blocks }
     }
-    /*
+
+
+    /**
      *  Remove (delete) a byte array fragment. The behavior is correct only if:
      *
      *  1. the same chunking algorithm is used as in the original `create`
