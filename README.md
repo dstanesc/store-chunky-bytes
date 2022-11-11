@@ -24,6 +24,7 @@ The intended usage is to persist and access collections of fixed size records. I
 - `v0.0.7` - API addition. Remove fragments of data w/o retrieving the original byte array.  I/O efficiency - O(n), n - number of chunks impacted by removal
 - `v0.0.8` - API addition. Convenience function to read all blocks, ie. full byte array
 - `v0.0.9` - Bugfix. Tolerate empty appends, also combined w/ empty creations
+- `v0.0.10`- API addition. Bulk to combine append and update in a single roundtrip
 
 ## Usage
 
@@ -98,6 +99,16 @@ updateBlocks.forEach(block => put(block))
 > Note: Update alg. tuned heuristically for best stability (ie. compare chunk offsets after update w/ full chunking of the updated buffer) results w/ `fastcdc`. 
 
 For more details see the [update tests](https://github.com/dstanesc/store-chunky-bytes/blob/2ced29bf28a55f0cd98a9434407414c09e0b795c/src/__tests__/chunky-delete.test.ts#L22)
+
+
+### Bulk
+
+```js
+const buf2 = ... // append buffer
+const buf3 = ... // update buffer
+// combines append and update operations in this order
+const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { appendBuffer: buf2, updateBuffer: buf3, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
+```
 
 ### Remove
 
