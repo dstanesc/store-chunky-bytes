@@ -183,7 +183,8 @@ const chunkyStore = () => {
      *  If above conditions are met, the function will return the incremental blocks and a new root. 
      *  The new root can be used to read any slice of data from the combined byte arrays.
      *  
-     *  @param {any} root - The rood content identifier of a previous chunked array as returned by the `create` function
+     *  @param {any} root - The root content identifier of a previous chunked array as returned by the `create`, `update` or `append` function
+     *  @param index - Optional offset lookup index as returned by the `create`, `update` or `append` function
      *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
      *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
      *  @param {Uint8Array} buff - Input buffer to partition in (content defined) chunks
@@ -266,7 +267,8 @@ const chunkyStore = () => {
      *  If above conditions are met, the function will return the incremental blocks and a new root. 
      *  The new root can be used to read any slice of data from the resulting byte array.
      *  
-     *  @param {any} root - The rood content identifier of a previous chunked array as returned by the `create` function
+     *  @param {any} root - The root content identifier of a previous chunked array as returned by the `create`, `update` or `append` function
+     *  @param index - Optional offset lookup index as returned by the `create`, `update` or `append` function
      *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
      *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
      *  @param {Uint8Array} buff - Input buffer for the update
@@ -469,7 +471,26 @@ const chunkyStore = () => {
         return { root: updateRoot, index: updateIndex, blocks: updateBlocks }
     }
 
-
+    /**
+     * Bulk operation combining `append` and `update` in a single roundtrip
+     * 
+     *  @param {any} root - The root content identifier of a previous chunked array as returned by the `create`, `update` or `append` function
+     *  @param index - Optional offset lookup index as returned by the `create`, `update` or `append` function
+     *  @param {(cidBytes: Uint8Array) => any} decode - Cid decoding function
+     *  @param {(cid: any) => Promise<Uint8Array> }} get - data block access function
+     *  @param {Uint8Array} appendBuffer - Input buffer for the append
+     *  @param {Uint8Array} updateBuffer - Input buffer for the update
+     *  @param {(data: Uint8Array) => Uint32Array} chunk - Chunking algorithm to apply on the input. Should return a list of chunk start offsets
+     *  @param {(chunkBytes: Uint8Array) => Promise<any> } encode - Cid encoding function
+     *  @param {number} updateStartOffset - The offset to apply changes from
+     *
+     */
+    const bulk = async ({ root, index, decode, get }: { root?: any, index?: any, decode: (cidBytes: Uint8Array) => any, get: (cid: any) => Promise<Uint8Array> }, { appendBuffer, updateBuffer, chunk, encode }: { appendBuffer: Uint8Array, updateBuffer: Uint8Array, chunk: (data: Uint8Array) => Uint32Array, encode: (chunkBytes: Uint8Array) => Promise<any> }, updateStartOffset: number): Promise<{ root: any, index: { indexStruct: { startOffsets: Map<number, any>, indexSize: number, byteArraySize: number }, indexBuffer: Uint8Array }, blocks: { cid: any, bytes: Uint8Array }[] }> => {
+        const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root, index, decode, get }, { buf: appendBuffer, chunk, encode })
+        const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root: appendRoot, index: appendIndex, decode, get }, { buf: updateBuffer, chunk, encode }, updateStartOffset)
+        const blocks = [...appendBlocks, ...updateBlocks]
+        return { root: updateRoot, index: updateIndex, blocks }
+    }
     /*
      *  Remove (delete) a byte array fragment. The behavior is correct only if:
      *
@@ -686,7 +707,7 @@ const chunkyStore = () => {
         return { indexStruct: index, indexBuffer }
     }
 
-    return { create, read, readAll, append, update, remove, readIndex /* for testing only */ }
+    return { create, read, readAll, append, update, bulk, remove, readIndex }
 }
 
 export { chunkyStore }
