@@ -106,6 +106,36 @@ describe("Chunky append", function () {
         assert.deepStrictEqual(appendIndex, origIndex)
     })
 
+    test("empty append on empty original works", async () => {
+
+        // configure chunky store
+        const { get, put } = blockStore()
+        const { encode, decode } = codec()
+        const { create, read, append } = chunkyStore()
+        const { fastcdc } = chunkerFactory({ fastAvgSize: 512 })
+
+        // demo binary data
+        const { buf, records: startRecords } = demoByteArray(0, RECORD_SIZE_BYTES)
+        assert.equal(buf.byteLength, 0)
+
+        // persist chunked binary data
+        const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
+        origBlocks.forEach(block => put(block))
+
+        // demo empty buffer
+        const { buf: buf2, records: appendedRecords } = demoByteArray(0, RECORD_SIZE_BYTES)
+        assert.equal(buf2.byteLength, 0)
+
+        // append empty data
+        const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
+        appendBlocks.forEach(block => put(block))
+        
+        assert.strictEqual(startRecords.length, 0)
+        assert.strictEqual(appendedRecords.length, 0)
+        assert.strictEqual(appendRoot.toString(), origRoot.toString())
+        assert.deepStrictEqual(appendIndex, origIndex)
+    })
+
     test("append and retrieve full data to existing chunky bytes, fastcdc", async () => {
 
         // demo binary data
