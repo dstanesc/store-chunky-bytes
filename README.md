@@ -23,6 +23,7 @@ The intended usage is to persist and access collections of fixed size records. I
 - `v0.0.6` - Update enhancements. Improved heuristically chunk offset stability
 - `v0.0.7` - API addition. Remove fragments of data w/o retrieving the original byte array.  I/O efficiency - O(n), n - number of chunks impacted by removal
 - `v0.0.8` - API addition. Convenience function to read all blocks, ie. full byte array
+- `v0.0.9` - Bugfix. Tolerate empty appends, also combined w/ empty creations
 
 ## Usage
 
