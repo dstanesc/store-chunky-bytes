@@ -41,14 +41,14 @@ describe("Chunky bulk", function () {
 
         // initial  data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
         console.log(origIndex.indexStruct.startOffsets)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
         console.log(appendIndex.indexStruct.startOffsets)
 
         const retrievedRecords1 = await retrieveRecords(read, 0, RECORD_COUNT, { root: origRoot, index: origIndex, decode, get })
@@ -66,7 +66,7 @@ describe("Chunky bulk", function () {
 
         // update from buf3 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root: appendRoot, decode, get }, { buf: buf3, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // read all discrete
         const allRecords = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: updateRoot, index: updateIndex, decode, get })
@@ -74,7 +74,7 @@ describe("Chunky bulk", function () {
         /**
          *  Bulk append, update
          */
-        const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { chunk: fastcdc, encode }, buf2, [{ updateBuffer: buf3, updateStartOffset: RECORD_UPDATE_OFFSET }])
+        const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get, put }, { chunk: fastcdc, encode }, buf2, [{ updateBuffer: buf3, updateStartOffset: RECORD_UPDATE_OFFSET }])
 
         // read all bulk
         const bulkRecords = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: bulkRoot, index: bulkIndex, decode, get })
@@ -101,13 +101,13 @@ describe("Chunky bulk", function () {
 
         // initial  data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
 
         const retrievedRecords1 = await retrieveRecords(read, 0, RECORD_COUNT, { root: origRoot, index: origIndex, decode, get })
         assert.equal(startRecords.length, retrievedRecords1.length)
@@ -124,14 +124,14 @@ describe("Chunky bulk", function () {
 
         // update from buf3 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root: appendRoot, decode, get }, { buf: buf3, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // demo binary data to update
         const { buf: buf4, records: updatingRecords2 } = demoByteArray(RECORD_UPDATE_COUNT - 10, RECORD_SIZE_BYTES)
 
         // update from buf4 @ RECORD_UPDATE_OFFSET + ( RECORD_UPDATE_COUNT * RECORD_SIZE_BYTES) ie. after first update
         const { root: updateRoot2, index: updateIndex2, blocks: updateBlocks2 } = await update({ root: updateRoot, decode, get }, { buf: buf4, chunk: fastcdc, encode }, RECORD_UPDATE_NEXT_OFFSET)
-        updateBlocks2.forEach(block => put(block))
+        for (const block of updateBlocks2) await put(block)
 
         // read all discrete
         const allRecords = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: updateRoot, index: updateIndex, decode, get })
@@ -139,8 +139,8 @@ describe("Chunky bulk", function () {
         /**
          *  Create + bulk append and updates
          */
-        const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get }, { chunk: fastcdc, encode }, buf2, [{ updateBuffer: buf3, updateStartOffset: RECORD_UPDATE_OFFSET }, { updateBuffer: buf4, updateStartOffset: RECORD_UPDATE_NEXT_OFFSET }])
-        bulkBlocks.forEach(block => put(block))
+        const { root: bulkRoot, index: bulkIndex, blocks: bulkBlocks } = await bulk({ root: origRoot, decode, get,  put}, { chunk: fastcdc, encode }, buf2, [{ updateBuffer: buf3, updateStartOffset: RECORD_UPDATE_OFFSET }, { updateBuffer: buf4, updateStartOffset: RECORD_UPDATE_NEXT_OFFSET }])
+        for (const block of bulkBlocks) await put(block)
 
         // read all bulk
         const bulkRecords = await retrieveRecords(read, 0, RECORD_COUNT + RECORD_APPEND_COUNT, { root: bulkRoot, index: bulkIndex, decode, get })

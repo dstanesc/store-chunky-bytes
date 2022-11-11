@@ -21,7 +21,7 @@ const codec = () => {
 
 const blockStore = (other?: any) => {
     const blocks = Object.assign({}, other);
-    const put = (block: { cid: any, bytes: Uint8Array }): void => {
+    const put = async (block: { cid: any, bytes: Uint8Array }):  Promise<void> => {
         blocks[block.cid.toString()] = block.bytes
     }
     const get = async (cid: any): Promise<Uint8Array> => {

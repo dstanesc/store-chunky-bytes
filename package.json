@@ -1,7 +1,7 @@
 {
   "name": "@dstanesc/store-chunky-bytes",
   "description": "Building block for content addressable persistence. Provides the ability to persist, modify and retrieve large byte-arrays or fragments thereof",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "homepage": "https://github.com/dstanesc/store-chunky-bytes",
   "repository": "https://github.com/dstanesc/store-chunky-bytes",
   "license": "(Apache-2.0 AND MIT)",

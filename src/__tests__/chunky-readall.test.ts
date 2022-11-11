@@ -31,7 +31,7 @@ describe("Read all chunks", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
         console.log(`Buffer size ${buf.length}`)
         console.log(`Index byteArraySize ${index.indexStruct.byteArraySize}`)

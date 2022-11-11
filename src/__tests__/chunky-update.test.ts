@@ -35,7 +35,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
 
         // demo binary data to update
@@ -43,7 +43,7 @@ describe("Chunky update", function () {
 
         // update from buf2 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // read one
         const updatedRecord = await retrieveRecords(read, RECORD_UPDATE_OFFSET, 1, { root: updateRoot, index: updateIndex, decode, get })
@@ -65,7 +65,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
 
         // demo binary data to update
@@ -73,7 +73,7 @@ describe("Chunky update", function () {
 
         // update from buf2 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // read one
         const updatedRecord = await retrieveRecords(read, RECORD_UPDATE_OFFSET, 1, { root: updateRoot, index: updateIndex, decode, get })
@@ -98,7 +98,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
 
         // demo binary data to update
@@ -106,7 +106,7 @@ describe("Chunky update", function () {
 
         // update from buf2 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // read one
         const updatedRecords = await retrieveRecords(read, RECORD_UPDATE_OFFSET, RECORD_UPDATE_COUNT + 10, { root: updateRoot, index: updateIndex, decode, get })
@@ -131,15 +131,14 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
-
+        for (const block of blocks) await put(block)
 
         // demo binary data to update
         const { buf: buf2, records: updatingRecords } = demoByteArray(RECORD_UPDATE_COUNT, RECORD_SIZE_BYTES)
 
         // update from buf2 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, 0)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // read one
         const updatedRecords = await retrieveRecords(read, 0, RECORD_UPDATE_COUNT + 10, { root: updateRoot, index: updateIndex, decode, get })
@@ -164,7 +163,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
 
         // demo binary data to update
@@ -172,7 +171,7 @@ describe("Chunky update", function () {
 
         // update from buf2 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, (RECORD_COUNT - RECORD_UPDATE_COUNT) * RECORD_SIZE_BYTES)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // read updated records
         const updatedRecords = await retrieveRecords(read, (RECORD_COUNT - RECORD_UPDATE_COUNT) * RECORD_SIZE_BYTES, RECORD_UPDATE_COUNT, { root: updateRoot, index: updateIndex, decode, get })
@@ -201,7 +200,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
 
         // demo binary data to update
@@ -210,7 +209,7 @@ describe("Chunky update", function () {
         //const updateOffset = RECORD_UPDATE_OFFSET
 
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         console.log(`Index struct size ${updateIndex.indexStruct.indexSize} byte array ${updateIndex.indexStruct.byteArraySize}`)
 
@@ -257,7 +256,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
 
         // demo binary data to update
@@ -265,7 +264,7 @@ describe("Chunky update", function () {
 
         // update from buf2 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         // read all
         const updatedRecords = await retrieveRecords(read, 0, RECORD_COUNT, { root: updateRoot, index: updateIndex, decode, get })
@@ -306,7 +305,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
         console.log(index.indexStruct.startOffsets)
 
@@ -315,7 +314,7 @@ describe("Chunky update", function () {
 
         // update from buf2 @ RECORD_UPDATE_OFFSET
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         console.log(updateIndex.indexStruct.startOffsets)
 
@@ -328,7 +327,7 @@ describe("Chunky update", function () {
 
         // persist again full updated buffer
         const { root: reRoot, index: reIndex, blocks: reBlocks } = await create({ buf: updatedBuffer, chunk: fastcdc, encode })
-        reBlocks.forEach(block => put(block))
+        for (const block of reBlocks) await put(block)
 
          // read full buffer again to assert binary equality
          const reBuffer = await read(0, RECORD_COUNT * RECORD_SIZE_BYTES, { root: reRoot, decode, get })
@@ -359,7 +358,7 @@ describe("Chunky update", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
         console.log(index.indexStruct.startOffsets)
 
@@ -368,7 +367,7 @@ describe("Chunky update", function () {
 
         // update from buf2 @ RECORD_UPDATE_OFFSET_PRIOR_END
         const { root: updateRoot, index: updateIndex, blocks: updateBlocks } = await update({ root, decode, get }, { buf: buf2, chunk: fastcdc, encode }, RECORD_UPDATE_OFFSET_PRIOR_END)
-        updateBlocks.forEach(block => put(block))
+        for (const block of updateBlocks) await put(block)
 
         console.log(updateIndex.indexStruct.startOffsets)
 
@@ -381,7 +380,7 @@ describe("Chunky update", function () {
 
         // persist again full updated buffer
         const { root: reRoot, index: reIndex, blocks: reBlocks } = await create({ buf: updatedBuffer, chunk: fastcdc, encode })
-        reBlocks.forEach(block => put(block))
+        for (const block of reBlocks) await put(block)
 
          // read full buffer again to assert binary equality
          const reBuffer = await read(0, RECORD_COUNT * RECORD_SIZE_BYTES, { root: reRoot, decode, get })

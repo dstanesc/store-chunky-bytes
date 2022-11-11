@@ -40,7 +40,7 @@ describe("Chunky bytes", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
         console.log(blocks.length)
         // extract a slice of the chunked data independent of chunk boundaries (eg. record 999) 
         const recordBytes = await read(999 * RECORD_SIZE_BYTES, RECORD_SIZE_BYTES, { root, decode, get })
@@ -76,7 +76,7 @@ describe("Chunky bytes", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
         // extract full data
         const recordBytes = await read(0, RECORD_SIZE_BYTES * 2000, { root, decode, get })
@@ -111,7 +111,7 @@ describe("Chunky bytes", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
 
         const completeBuffer = await read(0, RECORD_SIZE_BYTES * RECORD_COUNT, { root, decode, get })
         let cursor2 = 0
@@ -216,7 +216,7 @@ describe("Chunky bytes", function () {
 
         // persist chunked binary data
         const { root, index, blocks } = await create({ buf, chunk: fastcdc, encode })
-        blocks.forEach(block => put(block))
+        for (const block of blocks) await put(block)
         console.log(blocks.length)
 
         // extract a slice of the chunked by passing the index reference rather than root

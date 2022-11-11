@@ -29,7 +29,7 @@ describe("Chunky index", function () {
 
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
 
         console.log(origIndex.indexStruct.startOffsets)
 
@@ -56,7 +56,7 @@ describe("Chunky index", function () {
 
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
 
         const { indexStruct, indexBuffer } = await readIndex(origRoot, get, decode)
 
@@ -68,7 +68,7 @@ describe("Chunky index", function () {
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
 
         console.log(appendIndex.indexStruct.startOffsets)
 

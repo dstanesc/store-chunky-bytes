@@ -30,13 +30,13 @@ describe("Chunky append", function () {
 
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
 
         const origRecordBuffer = await read(1999 * RECORD_SIZE_BYTES, RECORD_SIZE_BYTES, { root: origRoot, decode, get })
         const origRecordFound = new TextDecoder().decode(origRecordBuffer)
@@ -62,13 +62,13 @@ describe("Chunky append", function () {
 
         // persist empty array
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
 
         assert.equal(origIndex.indexStruct.byteArraySize, 0)
 
@@ -91,7 +91,7 @@ describe("Chunky append", function () {
 
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
 
         // demo empty buffer
         const { buf: buf2, records: appendedRecords } = demoByteArray(0, RECORD_SIZE_BYTES)
@@ -99,7 +99,7 @@ describe("Chunky append", function () {
 
         // append empty data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
 
         assert.strictEqual(appendedRecords.length, 0)
         assert.strictEqual(appendRoot.toString(), origRoot.toString())
@@ -120,7 +120,7 @@ describe("Chunky append", function () {
 
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
 
         // demo empty buffer
         const { buf: buf2, records: appendedRecords } = demoByteArray(0, RECORD_SIZE_BYTES)
@@ -128,7 +128,7 @@ describe("Chunky append", function () {
 
         // append empty data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
         
         assert.strictEqual(startRecords.length, 0)
         assert.strictEqual(appendedRecords.length, 0)
@@ -149,14 +149,14 @@ describe("Chunky append", function () {
 
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: fastcdc, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
         console.log(origIndex.indexStruct.startOffsets)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: fastcdc, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
         console.log(appendIndex.indexStruct.startOffsets)
 
         const retrievedRecords1 = await retrieveRecords(read, 0, RECORD_COUNT, { root: origRoot, decode, get })
@@ -183,14 +183,14 @@ describe("Chunky append", function () {
 
         // persist chunked binary data
         const { root: origRoot, index: origIndex, blocks: origBlocks } = await create({ buf, chunk: buzhash, encode })
-        origBlocks.forEach(block => put(block))
+        for (const block of origBlocks) await put(block)
         console.log(origIndex.indexStruct.startOffsets)
 
         // demo binary data to append
         const { buf: buf2, records: appendedRecords } = demoByteArray(RECORD_APPEND_COUNT, RECORD_SIZE_BYTES)
         // append binary data
         const { root: appendRoot, index: appendIndex, blocks: appendBlocks } = await append({ root: origRoot, decode, get }, { buf: buf2, chunk: buzhash, encode })
-        appendBlocks.forEach(block => put(block))
+        for (const block of appendBlocks) await put(block)
         console.log(appendIndex.indexStruct.startOffsets)
 
         const retrievedRecords1 = await retrieveRecords(read, 0, RECORD_COUNT, { root: origRoot, decode, get })
